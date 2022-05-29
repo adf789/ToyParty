@@ -6,23 +6,11 @@ public class MouseInteraction : MonoBehaviour
 {
     private Vector2 mouseStartPos;
     [SerializeField] private Slot slot;
-    [SerializeField] private Gem gem;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     private void OnMouseDrag()
     {
-        if (GemAnimation.Instance.IsPlayAnim) return;
+        if (BlockAnimation.Instance.IsPlayAnim) return;
+        else if (PuzzleCreator.Instance.IsCreating) return;
 
         Slot.pickedSlot = slot;
     }
@@ -34,10 +22,11 @@ public class MouseInteraction : MonoBehaviour
 
     private void OnMouseEnter()
     {
-        if (GemAnimation.Instance.IsPlayAnim) return;
+        if (BlockAnimation.Instance.IsPlayAnim) return;
+        else if (PuzzleCreator.Instance.IsCreating) return;
         else if (Slot.pickedSlot == null) return;
         
-        slot.ExchangeGem(Slot.pickedSlot);
+        slot.ExchangeBlock(Slot.pickedSlot);
         Slot.pickedSlot = null;
     }
 }

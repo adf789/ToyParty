@@ -40,7 +40,7 @@ public class PuzzleSearch : MonoBehaviour
         List<Slot> breakableSlots = null;
         maybeClusterSlots.Clear();
 
-        Slot.Direction dir = FindNotSameGemDirection(slot);
+        Slot.Direction dir = FindNotSameBlockDirection(slot);
 
         // 주위 모든 슬롯의 젬이 같은 색일 경우
         if(dir == Slot.Direction.None)
@@ -55,7 +55,7 @@ public class PuzzleSearch : MonoBehaviour
                 if (!nearSlot.IsReadyBreak())
                 {
                     breakableSlots.Add(nearSlot);
-                    nearSlot.ReadyBreakGem();
+                    nearSlot.ReadyBreakBlock();
                 }
             });
 
@@ -77,7 +77,7 @@ public class PuzzleSearch : MonoBehaviour
         return maybeClusterSlots;
     }
 
-    private Slot.Direction FindNotSameGemDirection(Slot slot)
+    private Slot.Direction FindNotSameBlockDirection(Slot slot)
     {
         Slot.Direction endDir = Slot.Direction.None;
         Slot.Direction startDir = Slot.Direction.Up;
@@ -85,7 +85,7 @@ public class PuzzleSearch : MonoBehaviour
         // Cluster 체크하기위한 시작위치 탐색
         do
         {
-            if (!slot.IsSameGemWithNearSlot(startDir))
+            if (!slot.IsSameBlockWithNearSlot(startDir))
             {
                 endDir = startDir;
                 break;
@@ -115,7 +115,7 @@ public class PuzzleSearch : MonoBehaviour
                 TryGetSlotLine(slot, dir, ref slots);
             }
 
-            if (slot.IsSameGem(nearSlot))
+            if (slot.IsSameBlock(nearSlot))
             {
                 clusterSlots.Enqueue(nearSlot);
                 return;
@@ -124,7 +124,7 @@ public class PuzzleSearch : MonoBehaviour
             if (clusterSlots.Count > 2 && !slot.IsReadyBreak())
             {
                 slots.Add(slot);
-                slot.ReadyBreakGem();
+                slot.ReadyBreakBlock();
             }
             AddClusterSlots(clusterSlots, ref slots);
 
@@ -134,7 +134,7 @@ public class PuzzleSearch : MonoBehaviour
         if (clusterSlots.Count > 2 && !slot.IsReadyBreak())
         {
             slots.Add(slot);
-            slot.ReadyBreakGem();
+            slot.ReadyBreakBlock();
         }
         AddClusterSlots(clusterSlots, ref slots);
 
@@ -151,16 +151,16 @@ public class PuzzleSearch : MonoBehaviour
         Slot nearSlot_CrossDir = slot.GetNearSlot(crossDir);
         Slot calculateSlot = slot;
 
-        while (slot.IsSameGem(nearSlot_Dir) || slot.IsSameGem(nearSlot_CrossDir))
+        while (slot.IsSameBlock(nearSlot_Dir) || slot.IsSameBlock(nearSlot_CrossDir))
         {
-            if (slot.IsSameGem(nearSlot_Dir))
+            if (slot.IsSameBlock(nearSlot_Dir))
             {
                 lineCount++;
                 calculateSlot = nearSlot_Dir;
                 nearSlot_Dir = nearSlot_Dir.GetNearSlot(dir);
             }
 
-            if (slot.IsSameGem(nearSlot_CrossDir))
+            if (slot.IsSameBlock(nearSlot_CrossDir))
             {
                 lineCount++;
                 nearSlot_CrossDir = nearSlot_CrossDir.GetNearSlot(crossDir);
@@ -176,7 +176,7 @@ public class PuzzleSearch : MonoBehaviour
                 if (!calculateSlot.IsReadyBreak())
                 {
                     slotsInLine.Add(calculateSlot);
-                    calculateSlot.ReadyBreakGem();
+                    calculateSlot.ReadyBreakBlock();
                 }
                 calculateSlot = calculateSlot.GetNearSlot(crossDir);
             }
@@ -195,7 +195,7 @@ public class PuzzleSearch : MonoBehaviour
                 if (clusterSize > 2 && !clusterSlot.IsReadyBreak())
                 {
                     addedSlots.Add(clusterSlot);
-                    clusterSlot.ReadyBreakGem();
+                    clusterSlot.ReadyBreakBlock();
                 }
             }
         }

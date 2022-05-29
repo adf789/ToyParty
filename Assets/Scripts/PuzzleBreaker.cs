@@ -7,7 +7,8 @@ public class PuzzleBreaker : MonoBehaviour
 {
     private static PuzzleBreaker instance;
     // 파괴 대기 중인 큐
-    private Queue<Slot> readyToBreakGems;
+    private Queue<Slot> readyToBreakBlocks;
+    private List<Slot> rebuildSlotLines;
 
     private List<Slot> alreadyCheck;
     private Queue<Slot> waitingCheck;
@@ -24,26 +25,30 @@ public class PuzzleBreaker : MonoBehaviour
     private void Awake()
     {
         instance = this;
-        readyToBreakGems = new Queue<Slot>();
+        readyToBreakBlocks = new Queue<Slot>();
+        rebuildSlotLines = new List<Slot>();
         alreadyCheck = new List<Slot>();
         waitingCheck = new Queue<Slot>();
     }
 
-    public int TryBreakGem(Slot slot1)
+    public int TryBreakBlock(Slot slot1, Slot slot2)
     {
-        if (slot1 == null) return 0;
+        if (slot1 == null && slot2 == null) return 0;
 
-        readyToBreakGems.Clear();
+        readyToBreakBlocks.Clear();
 
-        InsertExistBreakGems(slot1);
+        if(slot1 != null) InsertExistBreakBlocks(slot1);
+        if (slot2 != null) InsertExistBreakBlocks(slot2);
 
-        int breakCount = BreakGems();
-        StartCoroutine(AfterBreak());
+        int breakCount = BreakBlocks();
+        if(breakCount > 0) StartCoroutine(AfterBreak());
         return breakCount;
     }
 
-    private void InsertExistBreakGems(Slot startSlot)
+    private void InsertExistBreakBlocks(Slot startSlot)
     {
+        if (startSlot.haveBlock is Obstacle) return;
+
         alreadyCheck.Clear();
         waitingCheck.Clear();
         waitingCheck.Enqueue(startSlot);
@@ -59,7 +64,7 @@ public class PuzzleBreaker : MonoBehaviour
             List<Slot> checkableSlots = PuzzleSearch.Instance.GetMaybeClusterSlots();
             breakableSlots.ForEach((slot) =>
             {
-                readyToBreakGems.Enqueue(slot);
+                readyToBreakBlocks.Enqueue(slot);
             });
 
             checkableSlots.ForEach((slot) =>
@@ -69,27 +74,53 @@ public class PuzzleBreaker : MonoBehaviour
         }
     }
 
-    private int BreakGems()
+    private int BreakBlocks()
     {
-        if (readyToBreakGems.Count == 0) return 0;
+        if (readyToBreakBlocks.Count == 0) return 0;
 
+        rebuildSlotLines.Clear();
         List<Slot> replaceLineForFirstSlots = new List<Slot>();
+        List<Slot> obstacles = new List<Slot>();
+
         int breakCount = 0;
-        while (readyToBreakGems.Count != 0)
+        while (readyToBreakBlocks.Count != 0)
         {
-            Slot slot_Cluster = readyToBreakGems.Dequeue();
+            Slot slot_Cluster = readyToBreakBlocks.Dequeue();
             if (slot_Cluster != null)
             {
                 breakCount++;
-                slot_Cluster.BreakGem();
+                slot_Cluster.BreakBlock();
 
-                Slot downSlot = slot_Cluster.GetNearSlot(Slot.Direction.Down);
-                if (downSlot == null || downSlot.haveGem != null) replaceLineForFirstSlots.Add(slot_Cluster);
+
+                Slot downSlot = null;
+                slot_Cluster.ForeachNearSlot((nearSlot, dir) =>
+                {
+                    if (dir == Slot.Direction.Down) downSlot = nearSlot;
+
+                    Obstacle obstacle = null;
+                    if(nearSlot != null && !nearSlot.IsReadyBreak() && nearSlot.haveBlock != null && nearSlot.haveBlock is Obstacle)
+                    {
+                        obstacles.Add(nearSlot);
+                        nearSlot.ReadyBreakBlock();
+                    }
+                });
+                if (downSlot == null || downSlot.haveBlock != null) replaceLineForFirstSlots.Add(slot_Cluster);
             }
         }
 
+        obstacles.ForEach((slot) => {
+            if (slot.IsReadyBreak())
+            {
+                slot.BreakBlock();
+                if (slot.haveBlock == null)
+                {
+                    BlockAnimation.Instance.MoveToEmptySlotForUpLine(slot);
+                    breakCount++;
+                }
+            }
+        });
         replaceLineForFirstSlots.Sort((slot1, slot2) => slot1.transform.localPosition.y.CompareTo(slot2.transform.localPosition.y));
-        replaceLineForFirstSlots.ForEach((slot) => GemAnimation.Instance.MoveToEmptySlotForUpLine(slot));
+        replaceLineForFirstSlots.ForEach((slot) => BlockAnimation.Instance.MoveToEmptySlotForUpLine(slot));
 
         return breakCount;
     }
@@ -101,18 +132,18 @@ public class PuzzleBreaker : MonoBehaviour
 
         while (true)
         {
-            yield return new WaitWhile(() => GemAnimation.Instance.IsPlayAnim);
+            yield return new WaitWhile(() => BlockAnimation.Instance.IsPlayAnim);
 
             int breakCount = 0;
             PuzzleSearch.Instance.CheckAllSlots((slot) =>
             {
-                breakCount += TryBreakGem(slot);
+                breakCount += TryBreakBlock(slot, null);
             });
 
             yield return null;
             if (breakCount == 0) break;
 
-            PuzzleCreator.Instance.CreateGems(breakCount);
+            PuzzleCreator.Instance.CreateBlocks(breakCount);
 
             yield return new WaitWhile(() => PuzzleCreator.Instance.IsCreating);
         }

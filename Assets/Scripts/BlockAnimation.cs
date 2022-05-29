@@ -3,41 +3,36 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class GemAnimation : MonoBehaviour
+public class BlockAnimation : MonoBehaviour
 {
-    private static GemAnimation instance;
+    private static BlockAnimation instance;
     [SerializeField] private bool isPlayAnim;
-    private Dictionary<Gem, Slot> movingGems = new Dictionary<Gem, Slot>();
+    private Dictionary<Block, Slot> movingBlocks = new Dictionary<Block, Slot>();
 
-    public static GemAnimation Instance
+    public static BlockAnimation Instance
     {
         get
         {
             return instance;
         }
     }
-    public bool IsPlayAnim { get => isPlayAnim || movingGems.Count != 0; }
+    public bool IsPlayAnim { get => isPlayAnim || movingBlocks.Count != 0; }
 
     private void Awake()
     {
         instance = this;
     }
 
-    private void Start()
+    public void PlayExchangeBlock(Block fromBlock, Block toBlock, UnityAction resultAction = null)
     {
-        
+        StartCoroutine(BlockExchangingAnim(fromBlock, toBlock, resultAction));
     }
 
-    public void PlayExchangeGem(Gem fromGem, Gem toGem, UnityAction resultAction = null)
-    {
-        StartCoroutine(GemExchangingAnim(fromGem, toGem, resultAction));
-    }
-
-    IEnumerator GemExchangingAnim(Gem fromGem, Gem toGem, UnityAction resultAction = null)
+    IEnumerator BlockExchangingAnim(Block fromBlock, Block toBlock, UnityAction resultAction = null)
     {
         isPlayAnim = true;
-        Transform fromTransform = fromGem.transform;
-        Transform toTransform = toGem.transform;
+        Transform fromTransform = fromBlock.transform;
+        Transform toTransform = toBlock.transform;
 
         while (true)
         {
@@ -59,9 +54,9 @@ public class GemAnimation : MonoBehaviour
 
         while (upSlot != null)
         {
-            if(upSlot.haveGem != null)
+            if(upSlot.haveBlock != null)
             {
-                MoveGemToEmptySlot(upSlot);
+                MoveBlockToEmptySlot(upSlot);
             }
 
             Slot prevSlot = upSlot;
@@ -71,35 +66,35 @@ public class GemAnimation : MonoBehaviour
         }
     }
 
-    public void MoveToEmptySlot(Gem gem)
+    public void MoveToEmptySlot(Block block)
     {
-        if (movingGems.ContainsKey(gem)) return;
-        movingGems.Add(gem, null);
+        if (movingBlocks.ContainsKey(block)) return;
+        movingBlocks.Add(block, null);
 
-        StartCoroutine(GemMovingAnim(gem));
+        StartCoroutine(BlockMovingAnim(block));
     }
 
-    public void MoveGemToEmptySlot(Slot fromSlot)
+    public void MoveBlockToEmptySlot(Slot fromSlot)
     {
-        Gem gem = fromSlot.ReleaseGem();
-        if (gem == null) return;
+        Block block = fromSlot.ReleaseBlock();
+        if (block == null) return;
 
-        if (movingGems.ContainsKey(gem)) return;
-        movingGems.Add(gem, fromSlot);
+        if (movingBlocks.ContainsKey(block)) return;
+        movingBlocks.Add(block, fromSlot);
 
-        StartCoroutine(GemMovingAnim(gem, fromSlot));
+        StartCoroutine(BlockMovingAnim(block, fromSlot));
     }
 
-    IEnumerator GemMovingAnim(Gem gem, Slot startSlot = null)
+    IEnumerator BlockMovingAnim(Block block, Slot startSlot = null)
     {
         Slot nextSlot = null;
         Slot curSlot = startSlot;
 
-        Transform gemTransform = gem.transform;
+        Transform blockTransform = block.transform;
 
         while (true)
         {
-            if (nextSlot == null || gemTransform.position == nextSlot.transform.position)
+            if (nextSlot == null || blockTransform.position == nextSlot.transform.position)
             {
                 if(nextSlot != null) curSlot = nextSlot;
 
@@ -107,26 +102,26 @@ public class GemAnimation : MonoBehaviour
                 {
                     nextSlot = GetNextMovingSlot(curSlot);
                     yield return null;
-                } while (nextSlot != null && !nextSlot.TryReservedForGem());
+                } while (nextSlot != null && !nextSlot.TryReservedForBlock());
 
                 if (nextSlot == null)
                 {
-                    curSlot.SetGem(gem);
+                    curSlot.SetBlock(block);
                     curSlot.ReleaseReserved();
                     break;
                 }
                 else
                 {
-                    nextSlot.TryReservedForGem();
+                    nextSlot.TryReservedForBlock();
                     if (curSlot != null) curSlot.ReleaseReserved();
                 }
             }
 
-            gemTransform.position = Vector3.MoveTowards(gemTransform.position, nextSlot.transform.position, 10 * Time.deltaTime);
+            blockTransform.position = Vector3.MoveTowards(blockTransform.position, nextSlot.transform.position, 10 * Time.deltaTime);
             yield return null;
         }
 
-        movingGems.Remove(gem);
+        movingBlocks.Remove(block);
     }
 
     private Slot GetNextMovingSlot(Slot slot)
@@ -136,14 +131,14 @@ public class GemAnimation : MonoBehaviour
         Slot downSlot = slot.GetNearSlot(Slot.Direction.Down);
         if(downSlot != null)
         {
-            if (downSlot.haveGem == null) return downSlot;
+            if (downSlot.haveBlock == null) return downSlot;
         }
 
         Slot leftSlot = slot.GetNearSlot(Slot.Direction.Down_Left);
         Slot rightSlot = slot.GetNearSlot(Slot.Direction.Down_Right);
-        if ((leftSlot == null || leftSlot.haveGem != null) && (rightSlot == null || rightSlot.haveGem != null)) return null;
-        else if (leftSlot == null || leftSlot.haveGem != null) return rightSlot;
-        else if (rightSlot == null || rightSlot.haveGem != null) return leftSlot;
+        if ((leftSlot == null || leftSlot.haveBlock != null) && (rightSlot == null || rightSlot.haveBlock != null)) return null;
+        else if (leftSlot == null || leftSlot.haveBlock != null) return rightSlot;
+        else if (rightSlot == null || rightSlot.haveBlock != null) return leftSlot;
 
         return Random.Range(0, 2) == 0 ? leftSlot : rightSlot;
     }
