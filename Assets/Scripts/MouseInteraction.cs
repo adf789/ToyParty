@@ -20,7 +20,7 @@ public class MouseInteraction : MonoBehaviour
         
     }
 
-    private void OnMouseDown()
+    private void OnMouseDrag()
     {
         if (GemAnimation.Instance.IsPlayAnim) return;
 

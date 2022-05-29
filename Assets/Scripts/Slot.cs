@@ -215,9 +215,10 @@ public class Slot : MonoBehaviour
 
         void Break()
         {
-            bool doBreak1 = PuzzleBreaker.Instance.TryBreakGem(slot);
-            bool doBreak2 = PuzzleBreaker.Instance.TryBreakGem(this);
-            if (!doBreak1 && !doBreak2) ExchangeGem(slot, false);
+            int breakCount1 = PuzzleBreaker.Instance.TryBreakGem(slot);
+            int breakCount2 = PuzzleBreaker.Instance.TryBreakGem(this);
+            if (breakCount1 == 0 && breakCount2 == 0) ExchangeGem(slot, false);
+            else PuzzleCreator.Instance.CreateGems(breakCount1 + breakCount2);
         }
     }
 

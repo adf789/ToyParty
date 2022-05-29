@@ -15,6 +15,8 @@ public class PuzzleCreator : MonoBehaviour
     }
     public PuzzleSearch puzzleSearch;
     public Transform gemSpawnPoint;
+    private bool isCreating;
+    public bool IsCreating { get => isCreating; }
 
     private void Awake()
     {
@@ -38,6 +40,7 @@ public class PuzzleCreator : MonoBehaviour
 
     IEnumerator PlayCreateGemsAnim(int count)
     {
+        isCreating = true;
         for (int i = 0; i < count; i++)
         {
             Gem createdGem = GemPooling.Instance.GetUnuseGem();
@@ -48,5 +51,6 @@ public class PuzzleCreator : MonoBehaviour
             GemAnimation.Instance.MoveToEmptySlot(createdGem);
             yield return new WaitUntil(() => Mathf.Abs(createdGem.transform.position.y - gemSpawnPoint.position.y) > 2f);
         }
+        isCreating = false;
     }
 }

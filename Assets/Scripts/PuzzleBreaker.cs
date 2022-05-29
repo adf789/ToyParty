@@ -9,8 +9,9 @@ public class PuzzleBreaker : MonoBehaviour
     // 파괴 대기 중인 큐
     private Queue<Slot> readyToBreakGems;
 
-    private List<Slot> alreadyCheck_Cluster;
-    private Queue<Slot> waitingCheck_Cluster;
+    private List<Slot> alreadyCheck;
+    private Queue<Slot> waitingCheck;
+    private bool isBreaking;
 
     public static PuzzleBreaker Instance
     {
@@ -24,34 +25,35 @@ public class PuzzleBreaker : MonoBehaviour
     {
         instance = this;
         readyToBreakGems = new Queue<Slot>();
-        alreadyCheck_Cluster = new List<Slot>();
-        waitingCheck_Cluster = new Queue<Slot>();
+        alreadyCheck = new List<Slot>();
+        waitingCheck = new Queue<Slot>();
     }
 
-    public bool TryBreakGem(Slot slot)
+    public int TryBreakGem(Slot slot1)
     {
+        if (slot1 == null) return 0;
+
         readyToBreakGems.Clear();
 
-        InsertExistBreakGems(slot);
-        //InsertExistBreakGems_Line(slot);
+        InsertExistBreakGems(slot1);
 
         int breakCount = BreakGems();
-        StartCoroutine(AfterBreak(breakCount));
-        return breakCount > 0;
+        StartCoroutine(AfterBreak());
+        return breakCount;
     }
 
     private void InsertExistBreakGems(Slot startSlot)
     {
-        alreadyCheck_Cluster.Clear();
-        waitingCheck_Cluster.Clear();
-        waitingCheck_Cluster.Enqueue(startSlot);
+        alreadyCheck.Clear();
+        waitingCheck.Clear();
+        waitingCheck.Enqueue(startSlot);
 
-        while(waitingCheck_Cluster.Count != 0)
+        while(waitingCheck.Count != 0)
         {
-            Slot baseSlot = waitingCheck_Cluster.Dequeue();
+            Slot baseSlot = waitingCheck.Dequeue();
 
-            if (alreadyCheck_Cluster.Contains(baseSlot)) continue;
-            alreadyCheck_Cluster.Add(baseSlot);
+            if (alreadyCheck.Contains(baseSlot)) continue;
+            alreadyCheck.Add(baseSlot);
 
             List<Slot> breakableSlots = PuzzleSearch.Instance.GetBreakableSlots(baseSlot);
             List<Slot> checkableSlots = PuzzleSearch.Instance.GetMaybeClusterSlots();
@@ -62,38 +64,9 @@ public class PuzzleBreaker : MonoBehaviour
 
             checkableSlots.ForEach((slot) =>
             {
-                waitingCheck_Cluster.Enqueue(slot);
+                waitingCheck.Enqueue(slot);
             });
-            //int clusterSize = 0;
-            //baseSlot.ForeachCheckCluster((slot, size) =>
-            //{
-            //    clusterSize = size;
-            //    waitingCheck_Cluster.Enqueue(slot);
-            //    if (size > 2)
-            //    {
-            //        readyToBreakGem(slot);
-            //    }
-            //});
-
-            //if(clusterSize > 2)
-            //{
-            //    readyToBreakGem(baseSlot);
-            //}
         }
-    }
-
-    private void InsertExistBreakGems_Line(Slot curSlot)
-    {
-        List<Slot> slotsInLine = new List<Slot>();
-        curSlot.ForeachNearSlot(Slot.Direction.Up, Slot.Direction.Down_Right, (nearSlot, dir) =>
-        {
-            slotsInLine.Clear();
-            curSlot.TryGetSlotLine(dir, ref slotsInLine);
-            if(slotsInLine.Count > 0)
-            {
-                slotsInLine.ForEach((slot) => readyToBreakGem(slot));
-            }
-        });
     }
 
     private int BreakGems()
@@ -121,27 +94,29 @@ public class PuzzleBreaker : MonoBehaviour
         return breakCount;
     }
 
-    private void readyToBreakGem(Slot slot)
+    IEnumerator AfterBreak()
     {
-        if (!slot.IsReadyBreak()) readyToBreakGems.Enqueue(slot);
-        slot.ReadyBreakGem();
-    }
+        if (isBreaking) yield break;
+        isBreaking = true;
 
-    IEnumerator AfterBreak(int breakCount)
-    {
-        if (breakCount < 1) yield break;
-        yield return null;
-        yield return new WaitWhile(() => GemAnimation.Instance.IsPlayAnim);
-
-        GemAnimation.Instance.MoveGemToEmptySlot(PuzzleSearch.Instance.RootSlot);
-        PuzzleCreator.Instance.CreateGems(breakCount);
-
-        yield return null;
-        yield return new WaitWhile(() => GemAnimation.Instance.IsPlayAnim);
-
-        PuzzleSearch.Instance.CheckAllSlots((slot) =>
+        while (true)
         {
-            TryBreakGem(slot);
-        });
+            yield return new WaitWhile(() => GemAnimation.Instance.IsPlayAnim);
+
+            int breakCount = 0;
+            PuzzleSearch.Instance.CheckAllSlots((slot) =>
+            {
+                breakCount += TryBreakGem(slot);
+            });
+
+            yield return null;
+            if (breakCount == 0) break;
+
+            PuzzleCreator.Instance.CreateGems(breakCount);
+
+            yield return new WaitWhile(() => PuzzleCreator.Instance.IsCreating);
+        }
+
+        isBreaking = false;
     }
 }

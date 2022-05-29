@@ -14,6 +14,7 @@ public class Gem : MonoBehaviour
         Blue
     }
     [SerializeField] private GemColor color;
+    private Vector3 originScale;
 
     public GemColor Color { get => color; }
 
@@ -27,6 +28,11 @@ public class Gem : MonoBehaviour
     {
         //GemPooling.Instance.ReturnGem(this);
         StartCoroutine(Disappear());
+    }
+
+    private void Start()
+    {
+        originScale = transform.localScale;
     }
 
     private void InitColor()
@@ -67,14 +73,19 @@ public class Gem : MonoBehaviour
         if (renderer != null)
         {
             Color color = renderer.color;
-            while (renderer.color.a != 0)
+            Vector3 scale = originScale;
+            while (renderer.color.a > 0.01f)
             {
-                color.a = Mathf.Lerp(color.a, 0, 3 * Time.deltaTime);
+                color.a = Mathf.Lerp(color.a, 0, 5 * Time.deltaTime);
+                scale.x += 2f * Time.deltaTime;
+                scale.y += 2f * Time.deltaTime;
+                transform.localScale = scale;
                 renderer.color = color;
                 yield return null;
             }
         };
 
+        transform.localScale = originScale;
         GemPooling.Instance.ReturnGem(this);
     }
 }
