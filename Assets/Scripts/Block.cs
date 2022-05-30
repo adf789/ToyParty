@@ -13,9 +13,17 @@ public class Block : MonoBehaviour
         Purple,
         Blue
     }
+    public enum MoveDirection
+    {
+        Left,
+        Right
+    }
+
     [SerializeField] protected BlockColor blockColor;
     public BlockColor Block_Color { get => blockColor; }
     public Vector3 originScale;
+    public bool isMoving;
+    public MoveDirection direction;
 
     private void Awake()
     {

@@ -35,7 +35,7 @@ public class PuzzleSearch : MonoBehaviour
     /// </summary>
     /// <param name="slot"></param>
     /// <returns></returns>
-    public List<Slot> GetBreakableSlots(Slot slot)
+    public List<Slot> GetBreakableSlots_Cluster(Slot slot)
     {
         List<Slot> breakableSlots = null;
         maybeClusterSlots.Clear();
@@ -48,10 +48,6 @@ public class PuzzleSearch : MonoBehaviour
             breakableSlots = new List<Slot>();
             slot.ForeachNearSlot((nearSlot, dir) =>
             {
-                if(dir == Slot.Direction.Up || dir == Slot.Direction.Up_Right || dir == Slot.Direction.Down_Right)
-                {
-                    TryGetSlotLine(slot, dir, ref breakableSlots);
-                }
                 if (!nearSlot.IsReadyBreak())
                 {
                     breakableSlots.Add(nearSlot);
@@ -66,8 +62,25 @@ public class PuzzleSearch : MonoBehaviour
         }
         else
         {
-            breakableSlots = FindClusterAndLine(slot, dir);
+            breakableSlots = FindCluster(slot, dir);
         }
+
+        return breakableSlots;
+    }
+
+    /// <summary>
+    /// 주위 파괴 가능한 슬롯을 찾아 리스트를 만듦
+    /// </summary>
+    /// <param name="slot"></param>
+    /// <returns></returns>
+    public List<Slot> GetBreakableSlots_Line(Slot slot)
+    {
+        List<Slot> breakableSlots = new List<Slot>();
+
+        slot.ForeachNearSlot(Slot.Direction.Up, Slot.Direction.Down_Right, (nearSlot, dir) =>
+        {
+            TryGetSlotLine(slot, dir, ref breakableSlots);
+        });
 
         return breakableSlots;
     }
@@ -102,7 +115,7 @@ public class PuzzleSearch : MonoBehaviour
     /// <param name="slot"></param>
     /// <param name="startDir"></param>
     /// <returns></returns>
-    private List<Slot> FindClusterAndLine(Slot slot, Slot.Direction startDir)
+    private List<Slot> FindCluster(Slot slot, Slot.Direction startDir)
     {
         List<Slot> slots = new List<Slot>();
         Queue<Slot> clusterSlots = new Queue<Slot>();
@@ -110,11 +123,6 @@ public class PuzzleSearch : MonoBehaviour
         Slot.Direction endDir = Slot.RotateCounterClockWise(startDir, 1);
         slot.ForeachNearSlot(startDir, endDir, (nearSlot, dir) =>
         {
-            if (dir == Slot.Direction.Up || dir == Slot.Direction.Up_Right || dir == Slot.Direction.Down_Right)
-            {
-                TryGetSlotLine(slot, dir, ref slots);
-            }
-
             if (slot.IsSameBlock(nearSlot))
             {
                 clusterSlots.Enqueue(nearSlot);
@@ -185,7 +193,7 @@ public class PuzzleSearch : MonoBehaviour
 
     private void AddClusterSlots(Queue<Slot> addableSlots, ref List<Slot> addedSlots)
     {
-        if (addableSlots.Count > 1 || true)
+        if (addableSlots.Count > 1)
         {
             int clusterSize = addableSlots.Count;
             foreach (Slot clusterSlot in addableSlots)
@@ -205,14 +213,16 @@ public class PuzzleSearch : MonoBehaviour
     {
         if (curSlot == null) return;
 
-        if (dir == Slot.Direction.Down_Left) CheckSlotRecursive(Slot.Direction.Down_Left, curSlot.GetNearSlot(Slot.Direction.Down_Left), foreachAction);
-        else if (dir == Slot.Direction.Down_Right) CheckSlotRecursive(Slot.Direction.Down_Right, curSlot.GetNearSlot(Slot.Direction.Down_Right), foreachAction);
-        else
+        if (dir == Slot.Direction.None || dir == Slot.Direction.Down_Left)
         {
             CheckSlotRecursive(Slot.Direction.Down_Left, curSlot.GetNearSlot(Slot.Direction.Down_Left), foreachAction);
-            CheckSlotRecursive(Slot.Direction.Down, curSlot.GetNearSlot(Slot.Direction.Down), foreachAction);
+        }
+        if (dir == Slot.Direction.None || dir == Slot.Direction.Down_Right)
+        {
             CheckSlotRecursive(Slot.Direction.Down_Right, curSlot.GetNearSlot(Slot.Direction.Down_Right), foreachAction);
         }
+
+        CheckSlotRecursive(Slot.Direction.Down, curSlot.GetNearSlot(Slot.Direction.Down), foreachAction);
 
         foreachAction?.Invoke(curSlot);
     }

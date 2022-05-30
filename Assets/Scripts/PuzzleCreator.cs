@@ -15,17 +15,23 @@ public class PuzzleCreator : MonoBehaviour
     }
     public PuzzleSearch puzzleSearch;
     public Transform blockSpawnPoint;
-    private bool isCreating;
-    public bool IsCreating { get => isCreating; }
-
+    public int blockCount;
     [SerializeField] private GameObject gemPrefab;
-    public GameObject GemPrefab { get => gemPrefab; }
     [SerializeField] private GameObject obstaclePrefab;
+    private bool isCreating;
+
+    public bool IsCreating { get => isCreating; }
+    public GameObject GemPrefab { get => gemPrefab; }
     public GameObject ObstaclePrefab { get => obstaclePrefab; }
 
     private void Awake()
     {
         instance = this;
+        PuzzleSearch.Instance.CheckAllSlots((slot) =>
+        {
+            blockCount++;
+            slot.transform.localScale = Vector3.zero;
+        });
     }
 
     private void Start()
@@ -35,12 +41,17 @@ public class PuzzleCreator : MonoBehaviour
 
     public void AllSlotsRandomColor()
     {
-        int index = 0;
+        int index = 1;
+        int lineIndex = 0;
         puzzleSearch.CheckAllSlots((slot) =>
         {
-            if(slot.haveBlock == null) slot.haveBlock = slot.GetComponentInChildren<Block>();
-            if(slot.haveBlock is Gem) slot.haveBlock.SetColor((Block.BlockColor)Random.Range(0, 6));
             slot.index = index++;
+            if (slot.GetNearSlot(Slot.Direction.Down) == null) lineIndex++;
+            slot.lineIndex = lineIndex;
+            slot.gameObject.name = string.Format("Slot{0}", slot.index);
+            slot.transform.SetAsLastSibling();
+            if (slot.haveBlock == null) slot.haveBlock = slot.GetComponentInChildren<Block>();
+            if(slot.haveBlock is Gem) slot.haveBlock.SetColor((Block.BlockColor)Random.Range(0, 6));
         });
     }
 
@@ -63,6 +74,7 @@ public class PuzzleCreator : MonoBehaviour
                     Block block = slot.ReleaseBlock();
                     DestroyImmediate(block.gameObject);
                     Gem createBlock = Instantiate(gemPrefab).GetComponent<Gem>();
+                    createBlock.gameObject.name = string.Format("Gem{0}", slot.index + 1);
                     createBlock.Reset();
                     slot.SetBlock(createBlock);
                     slot.haveBlock.SetColor((Block.BlockColor)Random.Range(0, 6));
@@ -76,6 +88,7 @@ public class PuzzleCreator : MonoBehaviour
                     Block block = slot.ReleaseBlock();
                     DestroyImmediate(block.gameObject);
                     Obstacle createBlock = Instantiate(obstaclePrefab).GetComponent<Obstacle>();
+                    createBlock.gameObject.name = string.Format("Obstacle{0}", slot.index + 1);
                     createBlock.Reset();
                     slot.SetBlock(createBlock);
                 }
@@ -97,9 +110,11 @@ public class PuzzleCreator : MonoBehaviour
         {
             PuzzleSearch.Instance.CheckAllSlots((slot) =>
             {
-                slot.transform.localScale = Vector3.Lerp(slot.transform.localScale, Vector3.one, 2 * Time.deltaTime);
-
-                if (slot.transform.localScale == Vector3.one) isComplete = true;
+                slot.transform.localScale = Vector3.MoveTowards(slot.transform.localScale, Vector3.one, 2 * Time.deltaTime);
+                if (slot.transform.localScale == Vector3.one)
+                {
+                    isComplete = true;
+                }
             });
             yield return null;
         }
@@ -117,8 +132,9 @@ public class PuzzleCreator : MonoBehaviour
             createdBlock.transform.position = blockSpawnPoint.position;
             createdBlock.SetColor((Block.BlockColor)Random.Range(0, 6));
 
-            BlockAnimation.Instance.MoveToEmptySlot(createdBlock);
-            yield return new WaitUntil(() => Mathf.Abs(createdBlock.transform.position.y - blockSpawnPoint.position.y) > 2f);
+            BlockMover.Instance.AddMoveBlock(createdBlock);
+            BlockMover.Instance.StartMoveBlocks();
+            yield return new WaitUntil(() => Mathf.Abs(createdBlock.transform.position.y - PuzzleSearch.Instance.RootSlot.transform.position.y) < 1f);
         }
         isCreating = false;
     }

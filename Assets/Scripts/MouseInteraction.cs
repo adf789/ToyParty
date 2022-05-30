@@ -9,8 +9,9 @@ public class MouseInteraction : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        if (BlockAnimation.Instance.IsPlayAnim) return;
+        if (BlockMover.Instance.IsMoving) return;
         else if (PuzzleCreator.Instance.IsCreating) return;
+        else if (PuzzleBreaker.Instance.IsBreaking) return;
 
         Slot.pickedSlot = slot;
     }
@@ -22,8 +23,9 @@ public class MouseInteraction : MonoBehaviour
 
     private void OnMouseEnter()
     {
-        if (BlockAnimation.Instance.IsPlayAnim) return;
+        if (BlockMover.Instance.IsMoving) return;
         else if (PuzzleCreator.Instance.IsCreating) return;
+        else if (PuzzleBreaker.Instance.IsBreaking) return;
         else if (Slot.pickedSlot == null) return;
         
         slot.ExchangeBlock(Slot.pickedSlot);

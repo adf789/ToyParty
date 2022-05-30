@@ -2,17 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Linq;
 
 public class PuzzleBreaker : MonoBehaviour
 {
     private static PuzzleBreaker instance;
     // 파괴 대기 중인 큐
     private Queue<Slot> readyToBreakBlocks;
-    private List<Slot> rebuildSlotLines;
+    private Dictionary<int, Slot> rebuildLineLowestSlots;
 
     private List<Slot> alreadyCheck;
     private Queue<Slot> waitingCheck;
     private bool isBreaking;
+    public bool IsBreaking { get => isBreaking; }
 
     public static PuzzleBreaker Instance
     {
@@ -26,22 +28,59 @@ public class PuzzleBreaker : MonoBehaviour
     {
         instance = this;
         readyToBreakBlocks = new Queue<Slot>();
-        rebuildSlotLines = new List<Slot>();
+        rebuildLineLowestSlots = new Dictionary<int, Slot>();
         alreadyCheck = new List<Slot>();
         waitingCheck = new Queue<Slot>();
     }
 
-    public int TryBreakBlock(Slot slot1, Slot slot2)
+    public void AddBreakBlock(Slot slot)
     {
-        if (slot1 == null && slot2 == null) return 0;
+        if (slot == null) return;
 
-        readyToBreakBlocks.Clear();
+        InsertExistBreakBlocks(slot);
+        List<Slot> lineSlots = PuzzleSearch.Instance.GetBreakableSlots_Line(slot);
+        lineSlots.ForEach((tempSlot) => { readyToBreakBlocks.Enqueue(tempSlot); });
+    }
 
-        if(slot1 != null) InsertExistBreakBlocks(slot1);
-        if (slot2 != null) InsertExistBreakBlocks(slot2);
+    public int StartBreakBlocks()
+    {
+        if (readyToBreakBlocks.Count == 0) return 0;
 
-        int breakCount = BreakBlocks();
-        if(breakCount > 0) StartCoroutine(AfterBreak());
+        rebuildLineLowestSlots.Clear();
+        Queue<Slot> obstacles = new Queue<Slot>();
+
+        int breakCount = 0;
+        while (readyToBreakBlocks.Count != 0)
+        {
+            Slot slot_Cluster = readyToBreakBlocks.Dequeue();
+
+            breakCount++;
+            slot_Cluster.BreakBlock();
+            InsertSlotToRebuildLine(slot_Cluster);
+
+            slot_Cluster.ForeachNearSlot((nearSlot, dir) =>
+            {
+                if (nearSlot != null && !nearSlot.IsReadyBreak() && nearSlot.haveBlock != null && nearSlot.haveBlock is Obstacle)
+                {
+                    obstacles.Enqueue(nearSlot);
+                    nearSlot.ReadyBreakBlock();
+                }
+            });
+        }
+
+        while(obstacles.Count != 0)
+        {
+            Slot slot = obstacles.Dequeue();
+            slot.BreakBlock();
+            if (slot.haveBlock == null)
+            {
+                InsertSlotToRebuildLine(slot);
+                breakCount++;
+            }
+        }
+
+        if(!isBreaking) StartCoroutine(AfterBreak(breakCount));
+
         return breakCount;
     }
 
@@ -53,14 +92,14 @@ public class PuzzleBreaker : MonoBehaviour
         waitingCheck.Clear();
         waitingCheck.Enqueue(startSlot);
 
-        while(waitingCheck.Count != 0)
+        while (waitingCheck.Count != 0)
         {
             Slot baseSlot = waitingCheck.Dequeue();
 
             if (alreadyCheck.Contains(baseSlot)) continue;
             alreadyCheck.Add(baseSlot);
 
-            List<Slot> breakableSlots = PuzzleSearch.Instance.GetBreakableSlots(baseSlot);
+            List<Slot> breakableSlots = PuzzleSearch.Instance.GetBreakableSlots_Cluster(baseSlot);
             List<Slot> checkableSlots = PuzzleSearch.Instance.GetMaybeClusterSlots();
             breakableSlots.ForEach((slot) =>
             {
@@ -74,78 +113,40 @@ public class PuzzleBreaker : MonoBehaviour
         }
     }
 
-    private int BreakBlocks()
+    private void InsertSlotToRebuildLine(Slot slot)
     {
-        if (readyToBreakBlocks.Count == 0) return 0;
+        if (slot == null) return;
 
-        rebuildSlotLines.Clear();
-        List<Slot> replaceLineForFirstSlots = new List<Slot>();
-        List<Slot> obstacles = new List<Slot>();
-
-        int breakCount = 0;
-        while (readyToBreakBlocks.Count != 0)
-        {
-            Slot slot_Cluster = readyToBreakBlocks.Dequeue();
-            if (slot_Cluster != null)
-            {
-                breakCount++;
-                slot_Cluster.BreakBlock();
-
-
-                Slot downSlot = null;
-                slot_Cluster.ForeachNearSlot((nearSlot, dir) =>
-                {
-                    if (dir == Slot.Direction.Down) downSlot = nearSlot;
-
-                    Obstacle obstacle = null;
-                    if(nearSlot != null && !nearSlot.IsReadyBreak() && nearSlot.haveBlock != null && nearSlot.haveBlock is Obstacle)
-                    {
-                        obstacles.Add(nearSlot);
-                        nearSlot.ReadyBreakBlock();
-                    }
-                });
-                if (downSlot == null || downSlot.haveBlock != null) replaceLineForFirstSlots.Add(slot_Cluster);
-            }
-        }
-
-        obstacles.ForEach((slot) => {
-            if (slot.IsReadyBreak())
-            {
-                slot.BreakBlock();
-                if (slot.haveBlock == null)
-                {
-                    BlockAnimation.Instance.MoveToEmptySlotForUpLine(slot);
-                    breakCount++;
-                }
-            }
-        });
-        replaceLineForFirstSlots.Sort((slot1, slot2) => slot1.transform.localPosition.y.CompareTo(slot2.transform.localPosition.y));
-        replaceLineForFirstSlots.ForEach((slot) => BlockAnimation.Instance.MoveToEmptySlotForUpLine(slot));
-
-        return breakCount;
+        int lineIndex = slot.lineIndex;
+        if (!rebuildLineLowestSlots.ContainsKey(slot.lineIndex)) rebuildLineLowestSlots.Add(lineIndex, slot);
+        else if (rebuildLineLowestSlots[lineIndex].index > slot.index) rebuildLineLowestSlots[lineIndex] = slot;
     }
 
-    IEnumerator AfterBreak()
+    IEnumerator AfterBreak(int breakCount)
     {
         if (isBreaking) yield break;
         isBreaking = true;
 
-        while (true)
+        while (breakCount > 0)
         {
-            yield return new WaitWhile(() => BlockAnimation.Instance.IsPlayAnim);
-
-            int breakCount = 0;
-            PuzzleSearch.Instance.CheckAllSlots((slot) =>
+            foreach (KeyValuePair<int, Slot> pair in rebuildLineLowestSlots)
             {
-                breakCount += TryBreakBlock(slot, null);
-            });
-
-            yield return null;
-            if (breakCount == 0) break;
-
+                BlockMover.Instance.AddMoveBlockForUpLine(pair.Value);
+            }
+            BlockMover.Instance.StartMoveBlocks();
+            rebuildLineLowestSlots.Clear();
             PuzzleCreator.Instance.CreateBlocks(breakCount);
 
+            yield return new WaitWhile(() => BlockMover.Instance.IsMoving);
             yield return new WaitWhile(() => PuzzleCreator.Instance.IsCreating);
+
+            PuzzleSearch.Instance.CheckAllSlots((slot) =>
+            {
+                AddBreakBlock(slot);
+            });
+            breakCount = StartBreakBlocks();
+
+            yield return null;
         }
 
         isBreaking = false;

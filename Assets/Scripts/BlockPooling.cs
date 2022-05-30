@@ -31,6 +31,7 @@ public class BlockPooling : MonoBehaviour
         if(gem == null)
         {
             GameObject obj = Instantiate(PuzzleCreator.Instance.GemPrefab, transform);
+            obj.name = string.Format("Gem{0}", ++PuzzleCreator.Instance.blockCount);
             gem = obj.GetComponent<Gem>();
             gems.Add(gem);
         }
@@ -46,6 +47,7 @@ public class BlockPooling : MonoBehaviour
         if (obstacle == null)
         {
             GameObject obj = Instantiate(PuzzleCreator.Instance.ObstaclePrefab, transform);
+            obj.name = string.Format("Obstacle{0}", ++PuzzleCreator.Instance.blockCount);
             obstacle = obj.GetComponent<Obstacle>();
             obstacles.Add(obstacle);
         }

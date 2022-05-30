@@ -18,8 +18,9 @@ public class Slot : MonoBehaviour
     }
     public static Slot pickedSlot;
     public Block haveBlock;
-    public bool reservedForBlock;
+    public Block reservedForBlock;
     public int index;
+    public int lineIndex;
 
     [SerializeField] private Slot[] nearSlots;
     private bool readyBreak;
@@ -36,19 +37,8 @@ public class Slot : MonoBehaviour
         haveBlock = block;
         haveBlock.transform.SetParent(transform);
         haveBlock.transform.localPosition = Vector3.zero;
+        haveBlock.isMoving = false;
         readyBreak = false;
-    }
-
-    public bool TryReservedForBlock()
-    {
-        if (haveBlock != null || reservedForBlock) return false;
-        reservedForBlock = true;
-        return true;
-    }
-
-    public void ReleaseReserved()
-    {
-        reservedForBlock = false;
     }
 
     public Block ReleaseBlock()
@@ -177,13 +167,14 @@ public class Slot : MonoBehaviour
 
         ExchangeBlockWithSlot(slot);
 
-        BlockAnimation.Instance.PlayExchangeBlock(haveBlock, slot.haveBlock, (doingBreak ? Break : null));
+        BlockMover.Instance.PlayExchangeBlock(haveBlock, slot.haveBlock, (doingBreak ? Break : null));
 
         void Break()
         {
-            int breakCount = PuzzleBreaker.Instance.TryBreakBlock(slot, this);
+            PuzzleBreaker.Instance.AddBreakBlock(slot);
+            PuzzleBreaker.Instance.AddBreakBlock(this);
+            int breakCount = PuzzleBreaker.Instance.StartBreakBlocks();
             if (breakCount == 0) ExchangeBlock(slot, false);
-            else PuzzleCreator.Instance.CreateBlocks(breakCount);
         }
     }
 
