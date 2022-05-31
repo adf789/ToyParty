@@ -4,27 +4,20 @@ using UnityEngine;
 using UnityEngine.Events;
 using System.Linq;
 
-public class BlockMover : MonoBehaviour
+public class BlockMover : Singleton<BlockMover>
 {
-    private static BlockMover instance;
     [SerializeField] private bool isMoving;
     private Dictionary<Block, Slot> movingBlocks;
+    private MovePathList movePaths;
     private int movingCount;
     public int MovingCount { get => movingCount; }
 
-    public static BlockMover Instance
-    {
-        get
-        {
-            return instance;
-        }
-    }
     public bool IsMoving { get => isMoving || movingCount > 0; }
 
     private void Awake()
     {
-        instance = this;
         movingBlocks = new Dictionary<Block, Slot>();
+        movePaths = new MovePathList();
     }
 
     public void PlayExchangeBlock(Block fromBlock, Block toBlock, UnityAction resultAction = null)
@@ -60,7 +53,6 @@ public class BlockMover : MonoBehaviour
         {
             if(upSlot.haveBlock != null && !upSlot.haveBlock.isMoving)
             {
-                Debug.Log(upSlot + "½ÅÈ£ ¹ÞÀ½");
                 AddMoveBlock(upSlot);
             }
 
@@ -75,7 +67,8 @@ public class BlockMover : MonoBehaviour
     {
         if (block.isMoving) return;
         block.isMoving = true;
-        block.direction = Random.Range(0, 2) == 0 ? Block.MoveDirection.Left : Block.MoveDirection.Right;
+        float rootSlotPos_X = PuzzleSearch.Instance.RootSlot.transform.position.x;
+        block.moveDirection = Slot.Direction.Down;
         movingBlocks.Add(block, null);
     }
 
@@ -85,7 +78,10 @@ public class BlockMover : MonoBehaviour
         Block block = fromSlot.ReleaseBlock();
         if (block.isMoving) return;
         block.isMoving = true;
-        block.direction = Random.Range(0, 2) == 0 ? Block.MoveDirection.Left : Block.MoveDirection.Right;
+        float rootSlotPos_X = PuzzleSearch.Instance.RootSlot.transform.position.x;
+        if (rootSlotPos_X == block.transform.position.x) block.moveDirection = Slot.Direction.Down;
+        else if (rootSlotPos_X > block.transform.position.x) block.moveDirection = Slot.Direction.Down_Left;
+        else  block.moveDirection = Slot.Direction.Down_Right;
         movingBlocks.Add(block, fromSlot);
     }
 
@@ -94,92 +90,53 @@ public class BlockMover : MonoBehaviour
         Dictionary<Block, Slot> testDic = movingBlocks.OrderBy(pair => pair.Key.transform.position.y).ToDictionary(x => x.Key, x => x.Value);
         foreach (KeyValuePair<Block, Slot> pair in movingBlocks.OrderBy(pair => pair.Key.transform.position.y).ToDictionary(x => x.Key, x => x.Value))
         {
-            //Slot destinationSlot = FindDestinationSlot(pair.Key, pair.Value);
-            Queue<Slot> destinationPath = FindDestinationSlotQ(pair.Key, pair.Value);
-            Slot destinationSlot = destinationPath.Last<Slot>();
+            int pathIndex = FindDestinationSlotQ(pair.Key, pair.Value);
+            Slot destinationSlot = movePaths.GetLastSlotInPath(pathIndex);
             destinationSlot.reservedForBlock = pair.Key;
-            Debug.Log(pair.Key + " reserved: " + destinationSlot);
             
-            StartCoroutine(BlockMoving(pair.Key, destinationPath));
+            StartCoroutine(BlockMoving(pair.Key, pathIndex));
         }
 
         movingBlocks.Clear();
     }
 
-    IEnumerator BlockMoving(Block block, Queue<Slot> path)
+    IEnumerator BlockMoving(Block block, int pathIndex)
     {
         movingCount++;
+        movePaths.Lock(pathIndex);
 
-
-        Slot nextSlot = path.Dequeue();
+        Slot nextSlot = movePaths.GetNextPath(pathIndex);
         Transform blockTransform = block.transform;
-        float speed = 10f;
+        float speed = 7f;
 
         while (true)
         {
             blockTransform.position = Vector3.MoveTowards(blockTransform.position, nextSlot.transform.position, speed * Time.deltaTime);
             speed += 0.02f;
-            if (speed > 12f) speed = 12f;
+            if (speed > 9f) speed = 9f;
 
             if (blockTransform.position == nextSlot.transform.position)
             {
-                if(path.Count == 0)
+                if(movePaths.PathCount(pathIndex) == 0)
                 {
-                    Debug.Log(block + " µµÂø");
                     nextSlot.SetBlock(block);
                     nextSlot.reservedForBlock = null;
                     break;
                 }
-                nextSlot = path.Dequeue();
-                Debug.Log(block + " -> " + nextSlot);
+                nextSlot = movePaths.GetNextPath(pathIndex);
             }
 
             yield return null;
         }
 
+        movePaths.UnLock(pathIndex);
         movingCount--;
     }
 
-    IEnumerator BlockMoving(Block block, Slot startSlot = null)
+    private int FindDestinationSlotQ(Block block, Slot startSlot = null)
     {
-        movingCount++;
-        Slot curSlot = startSlot;
-        Slot nextSlot = startSlot == null ? PuzzleSearch.Instance.RootSlot : GetNextDestination(block, curSlot);
-        Debug.Log(block + " -> " + nextSlot);
-
-        Transform blockTransform = block.transform;
-        float speed = 10f;
-
-        while (nextSlot != null)
-        {
-            blockTransform.position = Vector3.MoveTowards(blockTransform.position, nextSlot.transform.position, speed * Time.deltaTime);
-            speed += 0.02f;
-            if (speed > 1.2f) speed = 1.2f;
-
-            if (blockTransform.position == nextSlot.transform.position)
-            {
-                curSlot = nextSlot;
-                nextSlot = GetNextDestination(block, curSlot);
-                Debug.Log(block + " -> " + nextSlot);
-                if (curSlot.reservedForBlock != null && curSlot.reservedForBlock.Equals(block))
-                {
-                    Debug.Log(block + " µµÂø");
-                    curSlot.SetBlock(block);
-                    curSlot.reservedForBlock = null;
-                    break;
-                }
-            }
-
-            yield return null;
-        }
-
-        movingCount--;
-    }
-
-    private Queue<Slot> FindDestinationSlotQ(Block block, Slot startSlot = null)
-    {
-        Queue<Slot> pathQueue = new Queue<Slot>();
-        if (startSlot == null) pathQueue.Enqueue(PuzzleSearch.Instance.RootSlot);
+        int pathIndex = movePaths.GetIndex();
+        if (startSlot == null) movePaths.AddPath(pathIndex, PuzzleSearch.Instance.RootSlot);
         Slot destinationSlot = startSlot ?? PuzzleSearch.Instance.RootSlot;
         while (true)
         {
@@ -187,24 +144,10 @@ public class BlockMover : MonoBehaviour
             if (tempSlot == null) break;
 
             destinationSlot = tempSlot;
-            pathQueue.Enqueue(destinationSlot);
+            movePaths.AddPath(pathIndex, destinationSlot);
         }
 
-        return pathQueue;
-    }
-
-    private Slot FindDestinationSlot(Block block, Slot startSlot = null)
-    {
-        Slot destinationSlot = startSlot ?? PuzzleSearch.Instance.RootSlot;
-        while (true)
-        {
-            Slot tempSlot = GetNextDestination(block, destinationSlot);
-            if (tempSlot == null) break;
-
-            destinationSlot = tempSlot;
-        }
-
-        return destinationSlot;
+        return pathIndex;
     }
 
     private Slot GetNextDestination(Block block, Slot slot)
@@ -217,11 +160,22 @@ public class BlockMover : MonoBehaviour
         Slot leftSlot = slot.GetNearSlot(Slot.Direction.Down_Left);
         Slot rightSlot = slot.GetNearSlot(Slot.Direction.Down_Right);
 
+        if(block.moveDirection == Slot.Direction.Down_Left)
+        {
+            if (PossibleDestination(block, leftSlot)) return leftSlot;
+            else return null;
+        }
+        else if (block.moveDirection == Slot.Direction.Down_Right)
+        {
+            if (PossibleDestination(block, rightSlot)) return rightSlot;
+            else return null;
+        }
+
         if (PossibleDestination(block, leftSlot) && PossibleDestination(block, rightSlot))
         {
-            if (leftSlot.reservedForBlock != null && leftSlot.reservedForBlock.Equals(block)) return leftSlot;
-            else if (rightSlot.reservedForBlock != null && rightSlot.reservedForBlock.Equals(block)) return rightSlot;
-            else return block.direction == Block.MoveDirection.Left ? leftSlot : rightSlot;
+            if (leftSlot.reservedForBlock != null) return leftSlot;
+            else if (rightSlot.reservedForBlock != null) return rightSlot;
+            else return (Random.Range(0, 2) == 0 ? leftSlot : rightSlot);
         }
         else if (PossibleDestination(block, leftSlot)) return leftSlot;
         else if (PossibleDestination(block, rightSlot)) return rightSlot;

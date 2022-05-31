@@ -2,20 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BlockPooling : MonoBehaviour
+public class BlockPooling : Singleton<BlockPooling>
 {
-    private static BlockPooling instance;
-    public static BlockPooling Instance { get => instance; }
-
     [SerializeField] private List<Gem> gems;
     [SerializeField] private List<Obstacle> obstacles;
 
-    private void Awake()
-    {
-        instance = this;
-    }
-
-    private void Start()
+    public void Init()
     {
         PuzzleSearch.Instance.CheckAllSlots((slot) =>
         {

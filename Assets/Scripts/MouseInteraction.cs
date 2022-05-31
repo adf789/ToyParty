@@ -9,9 +9,7 @@ public class MouseInteraction : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        if (BlockMover.Instance.IsMoving) return;
-        else if (PuzzleCreator.Instance.IsCreating) return;
-        else if (PuzzleBreaker.Instance.IsBreaking) return;
+        if (!CheckEnableTouch()) return;
 
         Slot.pickedSlot = slot;
     }
@@ -23,12 +21,15 @@ public class MouseInteraction : MonoBehaviour
 
     private void OnMouseEnter()
     {
-        if (BlockMover.Instance.IsMoving) return;
-        else if (PuzzleCreator.Instance.IsCreating) return;
-        else if (PuzzleBreaker.Instance.IsBreaking) return;
+        if (!CheckEnableTouch()) return;
         else if (Slot.pickedSlot == null) return;
         
         slot.ExchangeBlock(Slot.pickedSlot);
         Slot.pickedSlot = null;
+    }
+
+    private bool CheckEnableTouch()
+    {
+        return Time.timeScale != 0f && !BlockMover.Instance.IsMoving && !PuzzleCreator.Instance.IsCreating && !PuzzleBreaker.Instance.IsBreaking;
     }
 }

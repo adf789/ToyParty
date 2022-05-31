@@ -2,23 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PuzzleCreator : MonoBehaviour
+public class PuzzleCreator : Singleton<PuzzleCreator>
 {
-    private static PuzzleCreator instance;
-
-    public static PuzzleCreator Instance
-    {
-        get
-        {
-            return instance;
-        }
-    }
     public PuzzleSearch puzzleSearch;
     public Transform blockSpawnPoint;
     public int blockCount;
     [SerializeField] private GameObject gemPrefab;
     [SerializeField] private GameObject obstaclePrefab;
     private bool isCreating;
+    private const float obstaclePercent = 0.1f;
+    [Header("랜덤 블록 생성")]
+    [SerializeField] private bool startRandomBlock;
 
     public bool IsCreating { get => isCreating; }
     public GameObject GemPrefab { get => gemPrefab; }
@@ -26,7 +20,6 @@ public class PuzzleCreator : MonoBehaviour
 
     private void Awake()
     {
-        instance = this;
         PuzzleSearch.Instance.CheckAllSlots((slot) =>
         {
             blockCount++;
@@ -36,7 +29,7 @@ public class PuzzleCreator : MonoBehaviour
 
     private void Start()
     {
-        StartCoroutine(PuzzleStart());
+        StartCoroutine(CreatePuzzle());
     }
 
     public void AllSlotsRandomColor()
@@ -75,8 +68,8 @@ public class PuzzleCreator : MonoBehaviour
                     DestroyImmediate(block.gameObject);
                     Gem createBlock = Instantiate(gemPrefab).GetComponent<Gem>();
                     createBlock.gameObject.name = string.Format("Gem{0}", slot.index + 1);
-                    createBlock.Reset();
                     slot.SetBlock(createBlock);
+                    createBlock.Reset();
                     slot.haveBlock.SetColor((Block.BlockColor)Random.Range(0, 6));
                 }
             }
@@ -89,8 +82,8 @@ public class PuzzleCreator : MonoBehaviour
                     DestroyImmediate(block.gameObject);
                     Obstacle createBlock = Instantiate(obstaclePrefab).GetComponent<Obstacle>();
                     createBlock.gameObject.name = string.Format("Obstacle{0}", slot.index + 1);
-                    createBlock.Reset();
                     slot.SetBlock(createBlock);
+                    createBlock.Reset();
                 }
             }
         });
@@ -99,6 +92,17 @@ public class PuzzleCreator : MonoBehaviour
     public void CreateBlocks(int count)
     {
         StartCoroutine(PlayCreateBlocksAnim(count));
+    }
+
+    IEnumerator CreatePuzzle()
+    {
+        if (startRandomBlock)
+        {
+            AllSlotsRandomColor();
+            PlaceRandomObstacle(obstaclePercent);
+        }
+        BlockPooling.Instance.Init();
+        yield return StartCoroutine(PuzzleStart());
     }
 
     IEnumerator PuzzleStart()
@@ -128,7 +132,8 @@ public class PuzzleCreator : MonoBehaviour
         isCreating = true;
         for (int i = 0; i < count; i++)
         {
-            Block createdBlock = BlockPooling.Instance.GetUnuseGem();
+            float createdObstaclePercent = Random.Range(0f, 1f);
+            Block createdBlock = createdObstaclePercent > obstaclePercent ? BlockPooling.Instance.GetUnuseGem() : BlockPooling.Instance.GetUnuseObstacle();
             createdBlock.transform.position = blockSpawnPoint.position;
             createdBlock.SetColor((Block.BlockColor)Random.Range(0, 6));
 

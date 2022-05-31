@@ -175,6 +175,7 @@ public class Slot : MonoBehaviour
             PuzzleBreaker.Instance.AddBreakBlock(this);
             int breakCount = PuzzleBreaker.Instance.StartBreakBlocks();
             if (breakCount == 0) ExchangeBlock(slot, false);
+            else ScreenUI.Instance.MinusMoveCount();
         }
     }
 

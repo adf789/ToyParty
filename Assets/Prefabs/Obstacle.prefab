@@ -74,7 +74,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingOrder: 2
   m_Sprite: {fileID: -2413806693520163455, guid: ebe73ca9363db456bacf42c025bb4847, type: 3}
   m_Color: {r: 0.4339623, g: 0.396472, b: 0.34594163, a: 1}
   m_FlipX: 0
@@ -100,11 +100,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   blockColor: 0
   originScale: {x: 1.8, y: 1.8, z: 1.8}
-  numberSprite:
-  - {fileID: 21300000, guid: 029c94b7373119d4cb36531a49c3b427, type: 3}
-  - {fileID: 21300000, guid: 4f15ace5f3456cd448bd247a01fc1f68, type: 3}
-  curIndex: 0
+  isMoving: 0
+  moveDirection: 0
+  hp: 2
   numberRenderer: {fileID: 2856002495997406295}
+  backRenderer: {fileID: 8447695228479412950}
+  spinTransform: {fileID: 3276922950519489362}
 --- !u!1 &8422493734859908228
 GameObject:
   m_ObjectHideFlags: 0
@@ -115,8 +116,9 @@ GameObject:
   m_Component:
   - component: {fileID: 3276922950519489362}
   - component: {fileID: 2856002495997406295}
+  - component: {fileID: 6076134304267556659}
   m_Layer: 0
-  m_Name: Numbering
+  m_Name: Spin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -178,7 +180,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 2
-  m_Sprite: {fileID: 21300000, guid: 029c94b7373119d4cb36531a49c3b427, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 18fc7dacc08afe342ae7b19d6279c5ea, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -189,3 +191,18 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &6076134304267556659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8422493734859908228}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
+  m_EffectDistance: {x: 1, y: -1}
+  m_UseGraphicAlpha: 1

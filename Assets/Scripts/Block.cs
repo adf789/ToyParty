@@ -11,19 +11,15 @@ public class Block : MonoBehaviour
         Yellow,
         Orange,
         Purple,
-        Blue
-    }
-    public enum MoveDirection
-    {
-        Left,
-        Right
+        Blue,
+        Black
     }
 
     [SerializeField] protected BlockColor blockColor;
     public BlockColor Block_Color { get => blockColor; }
     public Vector3 originScale;
     public bool isMoving;
-    public MoveDirection direction;
+    public Slot.Direction moveDirection;
 
     private void Awake()
     {
@@ -54,26 +50,6 @@ public class Block : MonoBehaviour
             return;
         };
 
-        switch (blockColor)
-        {
-            case BlockColor.Red:
-                renderer.color = new UnityEngine.Color(176 / 255f, 0, 0);
-                break;
-            case BlockColor.Green:
-                renderer.color = UnityEngine.Color.green;
-                break;
-            case BlockColor.Yellow:
-                renderer.color = UnityEngine.Color.yellow;
-                break;
-            case BlockColor.Orange:
-                renderer.color = new UnityEngine.Color(1, 94 / 255f, 0);
-                break;
-            case BlockColor.Purple:
-                renderer.color = new UnityEngine.Color(68 / 255f, 0, 183 / 255f);
-                break;
-            case BlockColor.Blue:
-                renderer.color = UnityEngine.Color.blue;
-                break;
-        }
+        renderer.color = CustomColor.GetColor(blockColor);
     }
 }
