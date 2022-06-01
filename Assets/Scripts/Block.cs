@@ -34,7 +34,7 @@ public class Block : MonoBehaviour
 
     public virtual void Reset() { }
 
-    public virtual bool Break() { return true; }
+    public virtual bool Break() { Debug.Log(this + " ÆÄ±«");  return true; }
     
     public virtual bool IsSame(Block block) {
         if (this is Obstacle || block is Obstacle) return false;

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Block_Rocket : Block
+public class Block_Rocket : SpecialBlock
 {
     protected new Vector3 originScale = new Vector3(0.3f, 0.3f, 1f);
 
@@ -14,6 +14,7 @@ public class Block_Rocket : Block
 
     public override bool Break()
     {
+        base.Break();
         StartCoroutine(Disappear());
         return true;
     }

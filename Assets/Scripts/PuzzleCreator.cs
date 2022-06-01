@@ -6,7 +6,7 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
 {
     public PuzzleSearch puzzleSearch;
     public Transform blockSpawnPoint;
-    public int blockCount;
+    private int blockCount;
     [SerializeField] private GameObject gemPrefab;
     [SerializeField] private GameObject obstaclePrefab;
     private bool isCreating;
@@ -17,6 +17,7 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
     public bool IsCreating { get => isCreating; }
     public GameObject GemPrefab { get => gemPrefab; }
     public GameObject ObstaclePrefab { get => obstaclePrefab; }
+    public int BlockCount { get => blockCount; }
 
     private void Awake()
     {
@@ -91,6 +92,7 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
 
     public void CreateBlocks(int count)
     {
+        Debug.Log(count + "俺 积己");
         StartCoroutine(PlayCreateBlocksAnim(count));
     }
 
@@ -128,7 +130,6 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
 
     IEnumerator PlayCreateBlocksAnim(int count)
     {
-        Debug.Log(count + "俺 积己");
         isCreating = true;
         for (int i = 0; i < count; i++)
         {

@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class BlockPooling : Singleton<BlockPooling>
 {
-    [SerializeField] private List<Gem> gems;
-    [SerializeField] private List<Obstacle> obstacles;
+    [SerializeField] private List<Gem> gems = new List<Gem>();
+    [SerializeField] private List<Obstacle> obstacles = new List<Obstacle>();
 
     public void Init()
     {
@@ -23,7 +23,7 @@ public class BlockPooling : Singleton<BlockPooling>
         if(gem == null)
         {
             GameObject obj = Instantiate(PuzzleCreator.Instance.GemPrefab, transform);
-            obj.name = string.Format("Gem{0}", ++PuzzleCreator.Instance.blockCount);
+            obj.name = "Gem";
             gem = obj.GetComponent<Gem>();
             gems.Add(gem);
         }
@@ -39,7 +39,7 @@ public class BlockPooling : Singleton<BlockPooling>
         if (obstacle == null)
         {
             GameObject obj = Instantiate(PuzzleCreator.Instance.ObstaclePrefab, transform);
-            obj.name = string.Format("Obstacle{0}", ++PuzzleCreator.Instance.blockCount);
+            obj.name = "Obstacle";
             obstacle = obj.GetComponent<Obstacle>();
             obstacles.Add(obstacle);
         }

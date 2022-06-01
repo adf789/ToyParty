@@ -361,6 +361,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 7
   lineIndex: 2
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 0}
   - {fileID: 1105461868}
@@ -774,6 +776,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 4
   lineIndex: 2
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 207328756}
   - {fileID: 1180077484}
@@ -1404,6 +1408,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 5
   lineIndex: 2
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 2012876940}
   - {fileID: 579720221}
@@ -1660,6 +1666,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 28
   lineIndex: 7
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1514654473}
   - {fileID: 497234739}
@@ -1796,6 +1804,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 22
   lineIndex: 6
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 497234739}
   - {fileID: 964877598}
@@ -2093,6 +2103,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 25
   lineIndex: 7
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1571836645}
   - {fileID: 1250840530}
@@ -2281,6 +2293,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 14
   lineIndex: 4
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1027549134}
   - {fileID: 0}
@@ -2751,6 +2765,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 23
   lineIndex: 6
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1095853020}
   - {fileID: 1231659954}
@@ -3324,6 +3340,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 10
   lineIndex: 3
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1195732127}
   - {fileID: 250717790}
@@ -4414,6 +4432,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 30
   lineIndex: 7
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 0}
   - {fileID: 0}
@@ -4602,6 +4622,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 1
   lineIndex: 1
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1580745173}
   - {fileID: 207328756}
@@ -4992,6 +5014,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 21
   lineIndex: 6
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 264548284}
   - {fileID: 2107285499}
@@ -5180,6 +5204,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 18
   lineIndex: 5
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1231659954}
   - {fileID: 1027549134}
@@ -5453,6 +5479,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 15
   lineIndex: 4
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 0}
   - {fileID: 0}
@@ -5803,6 +5831,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 8
   lineIndex: 3
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1180077484}
   - {fileID: 1571836645}
@@ -5991,6 +6021,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 24
   lineIndex: 6
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 0}
   - {fileID: 0}
@@ -6179,6 +6211,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 12
   lineIndex: 3
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 0}
   - {fileID: 801008671}
@@ -6664,6 +6698,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 9
   lineIndex: 3
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 579720221}
   - {fileID: 1825459255}
@@ -6852,6 +6888,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 11
   lineIndex: 3
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1105461868}
   - {fileID: 1514654473}
@@ -7141,6 +7179,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 19
   lineIndex: 5
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 0}
   - {fileID: 0}
@@ -7531,6 +7571,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 20
   lineIndex: 6
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 942036545}
   - {fileID: 1762047771}
@@ -7811,6 +7853,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 13
   lineIndex: 4
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 352532522}
   - {fileID: 0}
@@ -8523,6 +8567,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 29
   lineIndex: 7
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 801008671}
   - {fileID: 1095853020}
@@ -8787,6 +8833,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 3
   lineIndex: 1
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 0}
   - {fileID: 15540004}
@@ -9076,6 +9124,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 26
   lineIndex: 7
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1825459255}
   - {fileID: 942036545}
@@ -9264,6 +9314,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 2
   lineIndex: 1
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 1539490056}
   - {fileID: 2012876940}
@@ -10387,6 +10439,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 16
   lineIndex: 5
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 2107285499}
   - {fileID: 1253002431}
@@ -10676,6 +10730,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 27
   lineIndex: 7
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 250717790}
   - {fileID: 264548284}
@@ -11644,6 +11700,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 6
   lineIndex: 2
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 15540004}
   - {fileID: 1195732127}
@@ -11938,6 +11996,8 @@ MonoBehaviour:
   reservedForBlock: {fileID: 0}
   index: 17
   lineIndex: 5
+  lineCheck: 0
+  clusterCheck: 0
   nearSlots:
   - {fileID: 964877598}
   - {fileID: 352532522}
@@ -12228,9 +12288,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   puzzleSearch: {fileID: 2135281134}
   blockSpawnPoint: {fileID: 775480958}
-  blockCount: 0
   gemPrefab: {fileID: 5468714359560542012, guid: e498d4d60494a634691c8a8964835ed5, type: 3}
   obstaclePrefab: {fileID: 5468714359560542012, guid: 74a761dc19c204e41b0f31addecc889e, type: 3}
+  startRandomBlock: 0
 --- !u!114 &2135281137
 MonoBehaviour:
   m_ObjectHideFlags: 0

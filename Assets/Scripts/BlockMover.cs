@@ -7,18 +7,13 @@ using System.Linq;
 public class BlockMover : Singleton<BlockMover>
 {
     [SerializeField] private bool isMoving;
-    private Dictionary<Block, Slot> movingBlocks;
-    private MovePathList movePaths;
+    private Dictionary<Block, Slot> movingBlocks = new Dictionary<Block, Slot>();
+    private MovePathList movePaths = new MovePathList();
     private int movingCount;
     public int MovingCount { get => movingCount; }
 
     public bool IsMoving { get => isMoving || movingCount > 0; }
 
-    private void Awake()
-    {
-        movingBlocks = new Dictionary<Block, Slot>();
-        movePaths = new MovePathList();
-    }
 
     public void PlayExchangeBlock(Block fromBlock, Block toBlock, UnityAction resultAction = null)
     {
@@ -45,15 +40,16 @@ public class BlockMover : Singleton<BlockMover>
         isMoving = false;
     }
 
-    public void AddMoveBlockForUpLine(Slot slot)
+    public void SendSignalToUpLine(Slot slot)
     {
         Slot upSlot = slot;
 
         while (upSlot != null)
         {
-            if(upSlot.haveBlock != null && !upSlot.haveBlock.isMoving)
+            if(upSlot.haveBlock != null)
             {
-                AddMoveBlock(upSlot);
+                if (upSlot.haveBlock.isMoving || upSlot.IsReadyBreak()) return;
+                else AddMoveBlock(upSlot);
             }
 
             Slot prevSlot = upSlot;
@@ -67,8 +63,8 @@ public class BlockMover : Singleton<BlockMover>
     {
         if (block.isMoving) return;
         block.isMoving = true;
-        float rootSlotPos_X = PuzzleSearch.Instance.RootSlot.transform.position.x;
         block.moveDirection = Slot.Direction.Down;
+        Debug.Log(block + " 이동 추가");
         movingBlocks.Add(block, null);
     }
 
@@ -82,12 +78,13 @@ public class BlockMover : Singleton<BlockMover>
         if (rootSlotPos_X == block.transform.position.x) block.moveDirection = Slot.Direction.Down;
         else if (rootSlotPos_X > block.transform.position.x) block.moveDirection = Slot.Direction.Down_Left;
         else  block.moveDirection = Slot.Direction.Down_Right;
+
+        Debug.Log(block + " 이동 추가");
         movingBlocks.Add(block, fromSlot);
     }
 
     public void StartMoveBlocks()
     {
-        Dictionary<Block, Slot> testDic = movingBlocks.OrderBy(pair => pair.Key.transform.position.y).ToDictionary(x => x.Key, x => x.Value);
         foreach (KeyValuePair<Block, Slot> pair in movingBlocks.OrderBy(pair => pair.Key.transform.position.y).ToDictionary(x => x.Key, x => x.Value))
         {
             int pathIndex = FindDestinationSlotQ(pair.Key, pair.Value);
@@ -106,6 +103,7 @@ public class BlockMover : Singleton<BlockMover>
         movePaths.Lock(pathIndex);
 
         Slot nextSlot = movePaths.GetNextPath(pathIndex);
+        Debug.Log(string.Format("{0} -> {1}", block, nextSlot));
         Transform blockTransform = block.transform;
         float speed = 7f;
 
@@ -119,11 +117,13 @@ public class BlockMover : Singleton<BlockMover>
             {
                 if(movePaths.PathCount(pathIndex) == 0)
                 {
+                    Debug.Log(block + " 도착");
                     nextSlot.SetBlock(block);
                     nextSlot.reservedForBlock = null;
                     break;
                 }
                 nextSlot = movePaths.GetNextPath(pathIndex);
+                Debug.Log(string.Format("{0} -> {1}", block, nextSlot));
             }
 
             yield return null;

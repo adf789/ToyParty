@@ -7,23 +7,13 @@ using System;
 
 public class PuzzleBreaker : Singleton<PuzzleBreaker>
 {
-    private Queue<Slot> readyToBreakBlocks; // 파괴 대기 중인 큐
-    private Dictionary<int, Slot> rebuildLineLowestSlots;
-    private Queue<(Block, int)> scoreSpawns; 
-
-    private List<Slot> alreadyCheck;
-    private Queue<Slot> waitingCheck;
+    private Queue<Slot> readyToBreakBlocks = new Queue<Slot>(); // 파괴 대기 중인 큐
+    private Queue<(Block, int)> scoreSpawns = new Queue<(Block, int)>();
+    private Queue<Slot> bufferBreakBlocks = new Queue<Slot>();
+    private Queue<Slot> waitingCheckSlots = new Queue<Slot>();
+    private List<List<Slot>> unionSlots = new List<List<Slot>>();
     private bool isBreaking;
     public bool IsBreaking { get => isBreaking; }
-
-    private void Awake()
-    {
-        readyToBreakBlocks = new Queue<Slot>();
-        rebuildLineLowestSlots = new Dictionary<int, Slot>();
-        scoreSpawns = new Queue<(Block, int)>();
-        alreadyCheck = new List<Slot>();
-        waitingCheck = new Queue<Slot>();
-    }
 
     public void AddBreakBlock(Slot slot)
     {
@@ -36,7 +26,6 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
     {
         if (readyToBreakBlocks.Count == 0) return 0;
 
-        rebuildLineLowestSlots.Clear();
         Queue<Slot> obstacles = new Queue<Slot>();
 
         int breakCount = 0;
@@ -46,7 +35,7 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
             breakCount++;
             slot.BreakBlock();
-            InsertSlotToRebuildLine(slot);
+            BlockMover.Instance.SendSignalToUpLine(slot);
 
             slot.ForeachNearSlot((nearSlot, dir) =>
             {
@@ -58,21 +47,23 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
             });
         }
 
+        bool checkObstacle = false;
         while(obstacles.Count != 0)
         {
             Slot slot = obstacles.Dequeue();
             slot.BreakBlock();
             if (slot.haveBlock == null)
             {
-                InsertSlotToRebuildLine(slot);
+                BlockMover.Instance.SendSignalToUpLine(slot);
                 breakCount++;
+                checkObstacle = true;
             }
         }
 
-        if(!isBreaking) StartCoroutine(AfterBreak(breakCount));
+        Debug.Log(breakCount + "개 파괴" + (checkObstacle? "(장애물 포함)" : ""));
+        if (!isBreaking) StartCoroutine(AfterBreak(breakCount));
 
         InstantiateScoreText();
-
         return breakCount;
     }
 
@@ -80,24 +71,13 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
     {
         if (startSlot.haveBlock is Obstacle) return;
 
-        alreadyCheck.Clear();
-        waitingCheck.Clear();
-        waitingCheck.Enqueue(startSlot);
+        ResetCheck();
 
-        int originCount = readyToBreakBlocks.Count;
+        int clusterCount = FindCluster(startSlot);
+        int addedLineCount = FindLine(startSlot);
+        if(clusterCount > 0 || addedLineCount > 0) Debug.Log(string.Format("cluster:{0} line:{1}", clusterCount, addedLineCount));
 
-        while (waitingCheck.Count != 0)
-        {
-            Slot baseSlot = waitingCheck.Dequeue();
-
-            if (alreadyCheck.Contains(baseSlot)) continue;
-            alreadyCheck.Add(baseSlot);
-
-            InsertBreakableSlots_Cluster(baseSlot);
-        }
-
-        InsertBreakableSlots_Line(startSlot);
-        AddScoreInQueue(startSlot.haveBlock, readyToBreakBlocks.Count - originCount);
+        AddScoreInQueue(startSlot.haveBlock, clusterCount + addedLineCount);
     }
 
     private void AddScoreInQueue(Block block, int blockCount)
@@ -109,15 +89,6 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
         (Block, int) tuple = (block, score);
         scoreSpawns.Enqueue(tuple);
-    }
-
-    private void InsertSlotToRebuildLine(Slot slot)
-    {
-        if (slot == null) return;
-
-        int lineIndex = slot.lineIndex;
-        if (!rebuildLineLowestSlots.ContainsKey(slot.lineIndex)) rebuildLineLowestSlots.Add(lineIndex, slot);
-        else if (rebuildLineLowestSlots[lineIndex].index > slot.index) rebuildLineLowestSlots[lineIndex] = slot;
     }
 
     /// <summary>
@@ -134,23 +105,24 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
         {
             slot.ForeachNearSlot((nearSlot, dir) =>
             {
-                waitingCheck.Enqueue(nearSlot);
+                waitingCheckSlots.Enqueue(nearSlot);
 
                 if (!nearSlot.IsReadyBreak())
                 {
-                    readyToBreakBlocks.Enqueue(nearSlot);
+                    bufferBreakBlocks.Enqueue(nearSlot);
                     nearSlot.ReadyBreakBlock();
                 }
             });
 
             if (!slot.IsReadyBreak())
             {
-                readyToBreakBlocks.Enqueue(slot);
+                bufferBreakBlocks.Enqueue(slot);
+                slot.ReadyBreakBlock();
             }
         }
         else
         {
-            FindCluster(slot, dir);
+            FindClusterInOneSlot(slot, dir);
         }
     }
 
@@ -187,18 +159,20 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
     }
 
     /// <summary>
-    /// 주위 젬이 군집을 이루는지, 라인을 이루는지 탐색
+    /// 주위 블록이 군집을 이루는지 탐색
     /// </summary>
     /// <param name="slot"></param>
     /// <param name="startDir"></param>
     /// <returns></returns>
-    private void FindCluster(Slot slot, Slot.Direction startDir)
+    private void FindClusterInOneSlot(Slot slot, Slot.Direction startDir)
     {
         Queue<Slot> clusterSlots = new Queue<Slot>();
 
         Slot.Direction endDir = Slot.RotateCounterClockWise(startDir, 1);
         slot.ForeachNearSlot(startDir, endDir, (nearSlot, dir) =>
         {
+            if (nearSlot != null && nearSlot.IsReadyBreak()) return;
+
             if (slot.IsSameBlock(nearSlot))
             {
                 clusterSlots.Enqueue(nearSlot);
@@ -207,7 +181,7 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
             if (clusterSlots.Count > 2 && !slot.IsReadyBreak())
             {
-                readyToBreakBlocks.Enqueue(slot);
+                bufferBreakBlocks.Enqueue(slot);
                 slot.ReadyBreakBlock();
             }
             AddClusterSlots(clusterSlots);
@@ -217,7 +191,7 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
         if (clusterSlots.Count > 2 && !slot.IsReadyBreak())
         {
-            readyToBreakBlocks.Enqueue(slot);
+            bufferBreakBlocks.Enqueue(slot);
             slot.ReadyBreakBlock();
         }
         AddClusterSlots(clusterSlots);
@@ -233,29 +207,40 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
         Slot nearSlot_CrossDir = slot.GetNearSlot(crossDir);
         Slot calculateSlot = slot;
 
-        while (slot.IsSameBlock(nearSlot_Dir) || slot.IsSameBlock(nearSlot_CrossDir))
+        bool possibleNearSlot_Dir = false;
+        bool possibleNearSlot_CrossDir = false;
+
+        do
         {
-            if (slot.IsSameBlock(nearSlot_Dir))
+            possibleNearSlot_Dir = slot.IsSameBlock(nearSlot_Dir) && !nearSlot_Dir.IsReadyBreak();
+            possibleNearSlot_CrossDir = slot.IsSameBlock(nearSlot_CrossDir) && !nearSlot_CrossDir.IsReadyBreak();
+
+            if (possibleNearSlot_Dir)
             {
                 lineCount++;
                 calculateSlot = nearSlot_Dir;
                 nearSlot_Dir = nearSlot_Dir.GetNearSlot(dir);
             }
 
-            if (slot.IsSameBlock(nearSlot_CrossDir))
+            if (possibleNearSlot_CrossDir)
             {
                 lineCount++;
                 nearSlot_CrossDir = nearSlot_CrossDir.GetNearSlot(crossDir);
             }
-        }
+        } while (possibleNearSlot_Dir || possibleNearSlot_CrossDir);
 
         if (lineCount >= 3)
         {
             for (int i = 0; i < lineCount; i++)
             {
+                if (!calculateSlot.Equals(slot))
+                {
+                    waitingCheckSlots.Enqueue(calculateSlot);
+                }
+
                 if (!calculateSlot.IsReadyBreak())
                 {
-                    readyToBreakBlocks.Enqueue(calculateSlot);
+                    bufferBreakBlocks.Enqueue(calculateSlot);
                     calculateSlot.ReadyBreakBlock();
                 }
                 calculateSlot = calculateSlot.GetNearSlot(crossDir);
@@ -270,11 +255,11 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
             int clusterSize = addableSlots.Count;
             foreach (Slot clusterSlot in addableSlots)
             {
-                waitingCheck.Enqueue(clusterSlot);
+                waitingCheckSlots.Enqueue(clusterSlot);
 
                 if (clusterSize > 2 && !clusterSlot.IsReadyBreak())
                 {
-                    readyToBreakBlocks.Enqueue(clusterSlot);
+                    bufferBreakBlocks.Enqueue(clusterSlot);
                     clusterSlot.ReadyBreakBlock();
                 }
             }
@@ -293,6 +278,73 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
         }
     }
 
+    private void InsertToReadyListFromBuffer()
+    {
+        while(bufferBreakBlocks.Count != 0)
+        {
+            readyToBreakBlocks.Enqueue(bufferBreakBlocks.Dequeue());
+        }
+    }
+
+    private void ResetCheck()
+    {
+        PuzzleSearch.Instance.CheckAllSlots((slot) =>
+        {
+            slot.clusterCheck = false;
+            slot.lineCheck = false;
+        });
+    }
+
+    private int FindCluster(Slot startSlot)
+    {
+        if (startSlot == null) return 0;
+
+        waitingCheckSlots.Clear();
+        bufferBreakBlocks.Clear();
+        waitingCheckSlots.Enqueue(startSlot);
+        while (waitingCheckSlots.Count != 0)
+        {
+            Slot baseSlot = waitingCheckSlots.Dequeue();
+
+            if (baseSlot.clusterCheck) continue;
+            baseSlot.clusterCheck = true;
+
+            InsertBreakableSlots_Cluster(baseSlot);
+        }
+        int clusterCount = bufferBreakBlocks.Count;
+        InsertToReadyListFromBuffer();
+
+        return clusterCount;
+    }
+
+    private int FindLine(Slot startSlot)
+    {
+        if (startSlot == null) return 0;
+
+        waitingCheckSlots.Clear();
+        bufferBreakBlocks.Clear();
+        waitingCheckSlots.Enqueue(startSlot);
+        while (waitingCheckSlots.Count != 0)
+        {
+            Slot baseSlot = waitingCheckSlots.Dequeue();
+
+            if (baseSlot.lineCheck) continue;
+            baseSlot.lineCheck = true;
+
+            InsertBreakableSlots_Line(baseSlot);
+        }
+        int lineCount = bufferBreakBlocks.Count;
+        InsertToReadyListFromBuffer();
+
+        return lineCount;
+    }
+
+
+    /// <summary>
+    /// 블록을 부순 뒤 호출
+    /// </summary>
+    /// <param name="breakCount"></param>
+    /// <returns></returns>
     IEnumerator AfterBreak(int breakCount)
     {
         if (isBreaking) yield break;
@@ -300,16 +352,11 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
         while (breakCount > 0)
         {
-            foreach (KeyValuePair<int, Slot> pair in rebuildLineLowestSlots)
-            {
-                BlockMover.Instance.AddMoveBlockForUpLine(pair.Value);
-            }
             BlockMover.Instance.StartMoveBlocks();
-            rebuildLineLowestSlots.Clear();
             PuzzleCreator.Instance.CreateBlocks(breakCount);
 
-            yield return new WaitWhile(() => BlockMover.Instance.IsMoving);
             yield return new WaitWhile(() => PuzzleCreator.Instance.IsCreating);
+            yield return new WaitWhile(() => BlockMover.Instance.IsMoving);
 
             PuzzleSearch.Instance.CheckAllSlots((slot) =>
             {

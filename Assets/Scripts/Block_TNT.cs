@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Block_TNT : Block
+public class Block_TNT : SpecialBlock
 {
     protected new Vector3 originScale = new Vector3(0.35f, 0.35f, 1f);
 
@@ -14,6 +14,7 @@ public class Block_TNT : Block
 
     public override bool Break()
     {
+        Break();
         StartCoroutine(Disappear());
         return true;
     }

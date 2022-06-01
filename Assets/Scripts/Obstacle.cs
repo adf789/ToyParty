@@ -32,6 +32,7 @@ public class Obstacle : Block
 
     public override bool Break()
     {
+        base.Break();
         hp--;
         if (hp < 1)
         {

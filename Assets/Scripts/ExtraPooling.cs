@@ -4,13 +4,9 @@ using UnityEngine;
 
 public class ExtraPooling : Singleton<ExtraPooling>
 {
-    private Queue<ScoreText> scoreTexts;
+    private Queue<ScoreText> scoreTexts = new Queue<ScoreText>();
     [SerializeField] private GameObject scoreTextObj;
 
-    private void Awake()
-    {
-        scoreTexts = new Queue<ScoreText>();
-    }
 
     private void Start()
     {

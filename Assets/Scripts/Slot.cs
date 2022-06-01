@@ -21,6 +21,8 @@ public class Slot : MonoBehaviour
     public Block reservedForBlock;
     public int index;
     public int lineIndex;
+    public bool lineCheck;
+    public bool clusterCheck;
 
     [SerializeField] private Slot[] nearSlots;
     private bool readyBreak;
@@ -192,7 +194,6 @@ public class Slot : MonoBehaviour
     public void BreakBlock()
     {
         if (haveBlock == null) return;
-        Debug.Log(this + "¿¡¼­ " + haveBlock + " ÆÄ±«");
         readyBreak = false;
         if (haveBlock.Break()) ReleaseBlock();
     }

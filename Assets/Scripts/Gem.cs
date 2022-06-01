@@ -6,11 +6,6 @@ public class Gem : Block
 {
     protected new Vector3 originScale = new Vector3(1.8f, 1.8f, 1.8f);
 
-    private void OnEnable()
-    {
-
-    }
-
     public override void Reset()
     {
         base.Reset();
@@ -19,6 +14,7 @@ public class Gem : Block
 
     public override bool Break()
     {
+        base.Break();
         StartCoroutine(Disappear());
         return true;
     }
