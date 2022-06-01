@@ -10,34 +10,30 @@ public class Block_Boomerang : SpecialBlock
     {
         base.Reset();
         transform.localScale = originScale;
+        transform.localRotation = Quaternion.identity;
     }
 
     public override bool Break()
     {
         base.Break();
-        StartCoroutine(Disappear());
+        Slot someSlot = PuzzleSearch.Instance.SelectSomeSlot();
+        StartCoroutine(MoveTo(someSlot));
         return true;
     }
 
-    IEnumerator Disappear()
+    IEnumerator MoveTo(Slot slot)
     {
-        SpriteRenderer renderer = GetComponent<SpriteRenderer>();
-        if (renderer != null)
+        Vector3 targetPos = slot.transform.position;
+        while (transform.position != targetPos)
         {
-            Color color = renderer.color;
-            Vector3 scale = originScale;
-            while (renderer.color.a > 0.01f)
-            {
-                color.a = Mathf.Lerp(color.a, 0, 5 * Time.deltaTime);
-                scale.x += 2f * Time.deltaTime;
-                scale.y += 2f * Time.deltaTime;
-                transform.localScale = scale;
-                renderer.color = color;
-                yield return null;
-            }
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, 0.01f * Time.deltaTime);
+            transform.Rotate(Vector3.forward, 60 * Time.deltaTime);
+
+            yield return null;
         };
 
-        transform.localScale = originScale;
+        PuzzleBreaker.Instance.StartBreakBlockWithOneBlock(slot);
         BlockPooling.Instance.ReturnBlock(this);
+        base.Check();
     }
 }

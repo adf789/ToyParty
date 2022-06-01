@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class PuzzleCreator : Singleton<PuzzleCreator>
 {
@@ -9,6 +10,8 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
     private int blockCount;
     [SerializeField] private GameObject gemPrefab;
     [SerializeField] private GameObject obstaclePrefab;
+    [SerializeField] private GameObject block_BoomerangPrefab;
+    [SerializeField] private GameObject block_RocketPrefab;
     private bool isCreating;
     private const float obstaclePercent = 0.1f;
     [Header("랜덤 블록 생성")]
@@ -17,6 +20,8 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
     public bool IsCreating { get => isCreating; }
     public GameObject GemPrefab { get => gemPrefab; }
     public GameObject ObstaclePrefab { get => obstaclePrefab; }
+    public GameObject BoomerangPrefab { get => block_BoomerangPrefab; }
+    public GameObject RocketPrefab { get => block_RocketPrefab; }
     public int BlockCount { get => blockCount; }
 
     private void Awake()
@@ -90,9 +95,39 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
         });
     }
 
+    public bool CreateSpecialBlockForCluster(Slot curSlot, ref Queue<Slot> clusterSlots)
+    {
+        return false; // 사용x
+
+        if (clusterSlots.Count != 4) return false;
+
+        int count = clusterSlots.Count;
+        for(int i = 0; i < count; i++)
+        {
+            Slot tempSlot = clusterSlots.Dequeue();
+            PuzzleBreaker.Instance.AddSlotForSignalLine(tempSlot);
+
+            if (tempSlot.Equals(curSlot))
+            {
+                Block prevBlock = tempSlot.ReleaseBlock();
+                Block boomerang = BlockPooling.Instance.GetUnuseBoomerang();
+                boomerang.Reset();
+                boomerang.SetColor(prevBlock.Block_Color);
+                BlockPooling.Instance.ReturnBlock(prevBlock);
+
+                tempSlot.SetBlock(boomerang);
+                continue;
+            }
+
+            Block block = tempSlot.ReleaseBlock();
+            block.MoveTo(curSlot.transform.position, () => BlockPooling.Instance.ReturnBlock(block));
+            clusterSlots.Enqueue(tempSlot);
+        }
+        return true;
+    }
+
     public void CreateBlocks(int count)
     {
-        Debug.Log(count + "개 생성");
         StartCoroutine(PlayCreateBlocksAnim(count));
     }
 
@@ -124,6 +159,12 @@ public class PuzzleCreator : Singleton<PuzzleCreator>
             });
             yield return null;
         }
+
+        PuzzleSearch.Instance.CheckAllSlots((slot) =>
+        {
+            PuzzleBreaker.Instance.AddBreakBlock(slot);
+        });
+        PuzzleBreaker.Instance.StartBreakBlocks();
 
         isCreating = false;
     }

@@ -16,6 +16,17 @@ public class PuzzleSearch : Singleton<PuzzleSearch>
         CheckSlotRecursive(Slot.Direction.None, rootSlot, foreachAction);
     }
 
+    public Slot SelectSomeSlot()
+    {
+        Slot tempSlot = null;
+        CheckAllSlots((slot) =>
+        {
+            if (slot != null && !slot.IsReadyBreak() && slot.haveBlock != null) tempSlot = slot;
+        });
+
+        return tempSlot;
+    }
+
     private void CheckSlotRecursive(Slot.Direction dir, Slot curSlot, UnityAction<Slot> foreachAction)
     {
         if (curSlot == null) return;

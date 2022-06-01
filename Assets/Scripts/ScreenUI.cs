@@ -78,6 +78,7 @@ public class ScreenUI : Singleton<ScreenUI>
     public void OnClickRestart()
     {
         SceneManager.LoadScene("StageScene");
+        Time.timeScale = 1.0f;
     }
 
     public void CheckEndForStage()

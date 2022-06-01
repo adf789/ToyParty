@@ -11,7 +11,8 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
     private Queue<(Block, int)> scoreSpawns = new Queue<(Block, int)>();
     private Queue<Slot> bufferBreakBlocks = new Queue<Slot>();
     private Queue<Slot> waitingCheckSlots = new Queue<Slot>();
-    private List<List<Slot>> unionSlots = new List<List<Slot>>();
+    private Dictionary<int, Slot> signalSlots = new Dictionary<int, Slot>();
+    public int waitingSpecialBlockCount;
     private bool isBreaking;
     public bool IsBreaking { get => isBreaking; }
 
@@ -27,6 +28,7 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
         if (readyToBreakBlocks.Count == 0) return 0;
 
         Queue<Slot> obstacles = new Queue<Slot>();
+        signalSlots.Clear();
 
         int breakCount = 0;
         while (readyToBreakBlocks.Count != 0)
@@ -35,8 +37,8 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
             breakCount++;
             slot.BreakBlock();
-            BlockMover.Instance.SendSignalToUpLine(slot);
 
+            // 장애물 검색
             slot.ForeachNearSlot((nearSlot, dir) =>
             {
                 if (nearSlot != null && !nearSlot.IsReadyBreak() && nearSlot.haveBlock != null && nearSlot.haveBlock is Obstacle)
@@ -45,26 +47,48 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
                     nearSlot.ReadyBreakBlock();
                 }
             });
+
+            AddSlotForSignalLine(slot);
         }
 
-        bool checkObstacle = false;
         while(obstacles.Count != 0)
         {
             Slot slot = obstacles.Dequeue();
             slot.BreakBlock();
             if (slot.haveBlock == null)
             {
-                BlockMover.Instance.SendSignalToUpLine(slot);
+                AddSlotForSignalLine(slot);
                 breakCount++;
-                checkObstacle = true;
             }
         }
 
-        Debug.Log(breakCount + "개 파괴" + (checkObstacle? "(장애물 포함)" : ""));
         if (!isBreaking) StartCoroutine(AfterBreak(breakCount));
 
         InstantiateScoreText();
         return breakCount;
+    }
+
+    public void StartBreakBlockWithOneBlock(Slot slot)
+    {
+        if (slot == null || slot.haveBlock == null) return;
+
+        ScoreText scoreText = ExtraPooling.Instance.GetUnUseScoreText();
+        scoreText.transform.position = slot.transform.position;
+        scoreText.Show(30, slot.haveBlock.Block_Color);
+        ScreenUI.Instance.AddScore(30);
+
+        slot.BreakBlock();
+        AddSlotForSignalLine(slot);
+
+        if (!isBreaking) StartCoroutine(AfterBreak(1));
+    }
+
+    public void AddSlotForSignalLine(Slot slot)
+    {
+        if (slot == null) return;
+
+        if (!signalSlots.ContainsKey(slot.lineIndex)) signalSlots.Add(slot.lineIndex, slot);
+        else if (signalSlots[slot.lineIndex].transform.position.y > slot.transform.position.y) signalSlots[slot.lineIndex] = slot;
     }
 
     private void InsertExistBreakBlocks(Slot startSlot)
@@ -75,7 +99,6 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
         int clusterCount = FindCluster(startSlot);
         int addedLineCount = FindLine(startSlot);
-        if(clusterCount > 0 || addedLineCount > 0) Debug.Log(string.Format("cluster:{0} line:{1}", clusterCount, addedLineCount));
 
         AddScoreInQueue(startSlot.haveBlock, clusterCount + addedLineCount);
     }
@@ -312,6 +335,8 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
             InsertBreakableSlots_Cluster(baseSlot);
         }
         int clusterCount = bufferBreakBlocks.Count;
+        bool isSpecialBlock = startSlot.haveBlock is SpecialBlock;
+        if (!isSpecialBlock && PuzzleCreator.Instance.CreateSpecialBlockForCluster(startSlot, ref bufferBreakBlocks)) clusterCount = 0;
         InsertToReadyListFromBuffer();
 
         return clusterCount;
@@ -352,6 +377,12 @@ public class PuzzleBreaker : Singleton<PuzzleBreaker>
 
         while (breakCount > 0)
         {
+            yield return new WaitUntil(() => waitingSpecialBlockCount == 0);
+
+            foreach (Slot slot in signalSlots.Values)
+            {
+                BlockMover.Instance.SendSignalToUpLine(slot);
+            }
             BlockMover.Instance.StartMoveBlocks();
             PuzzleCreator.Instance.CreateBlocks(breakCount);
 

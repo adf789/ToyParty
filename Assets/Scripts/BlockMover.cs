@@ -64,7 +64,6 @@ public class BlockMover : Singleton<BlockMover>
         if (block.isMoving) return;
         block.isMoving = true;
         block.moveDirection = Slot.Direction.Down;
-        Debug.Log(block + " 이동 추가");
         movingBlocks.Add(block, null);
     }
 
@@ -79,7 +78,6 @@ public class BlockMover : Singleton<BlockMover>
         else if (rootSlotPos_X > block.transform.position.x) block.moveDirection = Slot.Direction.Down_Left;
         else  block.moveDirection = Slot.Direction.Down_Right;
 
-        Debug.Log(block + " 이동 추가");
         movingBlocks.Add(block, fromSlot);
     }
 
@@ -103,7 +101,6 @@ public class BlockMover : Singleton<BlockMover>
         movePaths.Lock(pathIndex);
 
         Slot nextSlot = movePaths.GetNextPath(pathIndex);
-        Debug.Log(string.Format("{0} -> {1}", block, nextSlot));
         Transform blockTransform = block.transform;
         float speed = 7f;
 
@@ -117,13 +114,11 @@ public class BlockMover : Singleton<BlockMover>
             {
                 if(movePaths.PathCount(pathIndex) == 0)
                 {
-                    Debug.Log(block + " 도착");
                     nextSlot.SetBlock(block);
                     nextSlot.reservedForBlock = null;
                     break;
                 }
                 nextSlot = movePaths.GetNextPath(pathIndex);
-                Debug.Log(string.Format("{0} -> {1}", block, nextSlot));
             }
 
             yield return null;

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class Block : MonoBehaviour
 {
@@ -34,7 +35,7 @@ public class Block : MonoBehaviour
 
     public virtual void Reset() { }
 
-    public virtual bool Break() { Debug.Log(this + " ÆÄ±«");  return true; }
+    public virtual bool Break() { return true; }
     
     public virtual bool IsSame(Block block) {
         if (this is Obstacle || block is Obstacle) return false;
@@ -51,5 +52,22 @@ public class Block : MonoBehaviour
         };
 
         renderer.color = CustomColor.GetColor(blockColor);
+    }
+
+    public void MoveTo(Vector3 pos, UnityAction resultAction)
+    {
+        StartCoroutine(MoveToAnim(pos, resultAction));
+    }
+
+    private IEnumerator MoveToAnim(Vector3 pos, UnityAction resultAction)
+    {
+        while (true)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, pos, 30 * Time.deltaTime);
+            if (transform.position == pos) break;
+            yield return null;
+        }
+
+        resultAction?.Invoke();
     }
 }
